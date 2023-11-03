@@ -1,0 +1,6 @@
+# Build directory
+/build
+
+# Generated configs
+compile_commands.json
+ConanPresets.json
