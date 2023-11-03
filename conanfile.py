@@ -5,7 +5,7 @@ import os
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMakeDeps, cmake_layout
 
-class BenchmarksRecipe(ConanFile):
+class CxxPlaygroundRecipe(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
 
     def requirements(self):

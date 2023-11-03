@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.27)
-project(bench CXX)
+project("${CMAKE_PROJECT_NAME}_benchmarks" CXX)
 
 find_package(benchmark REQUIRED)
 
-add_executable(${PROJECT_NAME} src/bench_concurrent.cc)
-target_link_libraries(${PROJECT_NAME} benchmark::benchmark)
+add_executable(benchmarks)
+target_sources(benchmarks PRIVATE
+    src/bench_concurrent.cc
+    src/main.cc
+)
+
+target_link_libraries(benchmarks benchmark::benchmark)

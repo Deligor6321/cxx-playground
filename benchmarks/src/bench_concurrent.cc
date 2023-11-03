@@ -103,5 +103,3 @@ static void bench_atomic(benchmark::State &state) {
   other_thread.join();
 }
 BENCHMARK(bench_atomic);
-
-BENCHMARK_MAIN();
