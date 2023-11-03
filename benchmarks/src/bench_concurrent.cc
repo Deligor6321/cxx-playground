@@ -4,9 +4,48 @@
 #include <condition_variable>
 #include <mutex>
 #include <semaphore>
+#include <shared_mutex>
 #include <thread>
 
-static void bench_condvar_mutex(benchmark::State& state) {
+static void bm_concurrent_condvar_shared_mutex(benchmark::State& state) {
+   bool ready = false;
+   bool finish = false;
+   std::shared_mutex mutex;
+   std::condition_variable_any cond_var;
+
+   auto other_thread = std::thread([&] {
+      while (true) {
+         auto lk = std::unique_lock(mutex);
+         cond_var.wait(lk, [&] { return finish || ready; });
+         if (finish) {
+            return;
+         }
+         ready = false;
+         lk.unlock();
+         cond_var.notify_one();
+      }
+   });
+
+   for (auto _ : state) {
+      auto lk = std::unique_lock(mutex);
+      cond_var.wait(lk, [&] { return !ready; });
+      ready = true;
+      lk.unlock();
+      cond_var.notify_one();
+   }
+
+   auto lk = std::unique_lock(mutex);
+   cond_var.wait(lk, [&] { return !ready; });
+
+   finish = true;
+   lk.unlock();
+   cond_var.notify_one();
+
+   other_thread.join();
+}
+BENCHMARK(bm_concurrent_condvar_shared_mutex);
+
+static void bm_concurrent_condvar_mutex(benchmark::State& state) {
    bool ready = false;
    bool finish = false;
    std::mutex mutex;
@@ -42,9 +81,9 @@ static void bench_condvar_mutex(benchmark::State& state) {
 
    other_thread.join();
 }
-BENCHMARK(bench_condvar_mutex);
+BENCHMARK(bm_concurrent_condvar_mutex);
 
-static void bench_semaphore(benchmark::State& state) {
+static void bm_concurrent_semaphore(benchmark::State& state) {
    auto ready_signal = std::binary_semaphore{1};
    auto start_signal = std::binary_semaphore{0};
    bool finish = false;
@@ -71,9 +110,9 @@ static void bench_semaphore(benchmark::State& state) {
 
    other_thread.join();
 }
-BENCHMARK(bench_semaphore);
+BENCHMARK(bm_concurrent_semaphore);
 
-static void bench_atomic(benchmark::State& state) {
+static void bm_concurrent_atomic(benchmark::State& state) {
    auto ready_state = std::atomic<bool>(true);
    bool finish = false;
 
@@ -102,4 +141,4 @@ static void bench_atomic(benchmark::State& state) {
 
    other_thread.join();
 }
-BENCHMARK(bench_atomic);
+BENCHMARK(bm_concurrent_atomic);
