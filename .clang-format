@@ -1,4 +1,4 @@
-﻿BasedOnStyle: LLVM
+﻿BasedOnStyle: Google
 ColumnLimit: 100
-IndentWidth: 3
 PointerAlignment: Left
+IncludeBlocks: Preserve

@@ -1,9 +1,8 @@
-
-
 import os
 
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMakeDeps, cmake_layout
+
 
 class CxxPlaygroundRecipe(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
@@ -15,7 +14,7 @@ class CxxPlaygroundRecipe(ConanFile):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
-        tc.user_presets_path = 'ConanPresets.json'
+        tc.user_presets_path = "ConanPresets.json"
         tc.generate()
 
     def layout(self):

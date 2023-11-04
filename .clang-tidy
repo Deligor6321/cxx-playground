@@ -1,0 +1,6 @@
+---
+Checks: '*,-altera-*,-fuchsia-*,-zircon-*,-llvmlibc-*'
+WarningsAsErrors: '*'
+HeaderFilterRegex: ''
+FormatStyle:     none
+
