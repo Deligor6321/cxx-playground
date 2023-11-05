@@ -47,6 +47,7 @@ void bm_concurrent_condvar_shared_mutex(benchmark::State& state) {
 
   other_thread.join();
 }
+
 void bm_concurrent_condvar_mutex(benchmark::State& state) {
   bool ready = false;
   bool finish = false;
@@ -142,6 +143,36 @@ void bm_concurrent_atomic(benchmark::State& state) {
   other_thread.join();
 }
 
+void bm_concurrent_flag(benchmark::State& state) {
+  auto ready_state = std::atomic_flag(true);
+  bool finish = false;
+
+  auto other_thread = std::thread([&] {
+    while (true) {
+      ready_state.wait(true, std::memory_order::acquire);
+      if (finish) {
+        return;
+      }
+      ready_state.test_and_set(std::memory_order::release);
+      ready_state.notify_one();
+    }
+  });
+
+  for ([[maybe_unused]] auto _it : state) {
+    ready_state.wait(false, std::memory_order::acquire);
+    ready_state.clear(std::memory_order::release);
+    ready_state.notify_one();
+  }
+
+  ready_state.wait(false, std::memory_order::acquire);
+
+  finish = true;
+  ready_state.clear(std::memory_order::release);
+  ready_state.notify_one();
+
+  other_thread.join();
+}
+
 }  // namespace
 
 // NOLINTBEGIN
@@ -149,4 +180,5 @@ BENCHMARK(bm_concurrent_condvar_shared_mutex);
 BENCHMARK(bm_concurrent_condvar_mutex);
 BENCHMARK(bm_concurrent_semaphore);
 BENCHMARK(bm_concurrent_atomic);
+BENCHMARK(bm_concurrent_flag);
 // NOLINTEND
