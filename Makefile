@@ -10,7 +10,7 @@ COMPILE_COMMANDS = compile_commands.json
 CONAN_PRESETS = ConanPresets.json
 CMDSEP = ;
 
-all: launch-benchmarks
+all: launch-benchmarks launch-tests
 .PHONY: all launch-benchmarks build-benchmarks config-release config-debug init compile_commands install_deps clean
 
 install_deps $(ROOT_DIR)/$(CONAN_PRESETS):
@@ -39,6 +39,13 @@ build-benchmarks $(RELEASE_DIR)/benchmarks/benchmarks: $(RELEASE_DIR)/$(CMAKE_GE
 
 launch-benchmarks: $(RELEASE_DIR)/benchmarks/benchmarks
 	$(RELEASE_DIR)/benchmarks/benchmarks
+
+build-tests $(RELEASE_DIR)/tests/tests: $(RELEASE_DIR)/$(CMAKE_GENERATOR_PRODUCT) $(ROOT_DIR)/$(CONAN_PRESETS)
+	rm -f $(RELEASE_DIR)/tests/tests
+	cmake --build --preset release --target tests
+
+launch-tests: $(RELEASE_DIR)/tests/tests
+	$(RELEASE_DIR)/tests/tests
 
 clean:
 	rm -f $(ROOT_DIR)/$(CONAN_PRESETS)

@@ -16,4 +16,7 @@ add_compile_options(
   -Weffc++
   -pedantic)
 
+include_directories(include)
+
 add_subdirectory(benchmarks)
+add_subdirectory(tests)

@@ -1,5 +1,5 @@
 ---
-Checks: '*,-altera-*,-fuchsia-*,-zircon-*,-llvmlibc-*'
+Checks: '*,-altera-*,-fuchsia-*,-zircon-*,-llvmlibc-*,-llvm-header-guard'
 WarningsAsErrors: '*'
 HeaderFilterRegex: ''
 FormatStyle:     none
