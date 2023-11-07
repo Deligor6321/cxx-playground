@@ -271,6 +271,9 @@ TEST_CASE("enum_flags_with_custom_mask") {
 TEST_CASE("enum_flags_deductions") {
   STATIC_CHECK(std::is_same_v<decltype(enum_flags(my_flag::first)),
                               enum_flags<my_flag, enum_flags_mask_unspecified_t>>);
+
+  STATIC_CHECK(std::is_same_v<decltype(enum_flags<my_flag>()),
+                              enum_flags<my_flag, enum_flags_mask_unspecified_t>>);
 }
 
 TEST_CASE("enum_flags_underlying_type") {

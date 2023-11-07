@@ -3,7 +3,6 @@
 #pragma once
 
 #include <bit>
-#include <limits>
 #include <type_traits>
 
 namespace dlgr {
@@ -33,11 +32,6 @@ constexpr inline auto make_enum_flags_mask_v = make_enum_flags_mask<EnumType, En
 
 }  // namespace detail
 
-// == Template declaration
-
-template <class Enum, class Mask>
-class enum_flags;
-
 // == Mask specification
 
 struct enum_flags_mask_unspecified_t {};
@@ -62,14 +56,18 @@ struct make_enum_flags_mask_spec {
   using from_enums_t = typename from_enums<EnumValues...>::type;
 };
 
+// == Template declaration
+
+template <class Enum, class Mask = enum_flags_mask_unspecified_t>
+class enum_flags;
+
 // == Template specialization for unspecified mask
 
 template <class EnumType>
   requires std::is_enum_v<EnumType>
 class enum_flags<EnumType, enum_flags_mask_unspecified_t> {
   using enum_flags_impl_type =
-      detail::enum_flags_impl<EnumType,
-                              std::numeric_limits<detail::enum_flags_data_t<EnumType>>::max()>;
+      detail::enum_flags_impl<EnumType, static_cast<detail::enum_flags_data_t<EnumType>>(~0U)>;
 
  public:
   // -- Member types
@@ -178,7 +176,7 @@ class enum_flags<EnumType, enum_flags_mask_unspecified_t> {
   }
 
  private:
-  enum_flags_impl_type flags_;
+  enum_flags_impl_type flags_ = {};
 };
 
 // == Template specialization for specified mask
@@ -323,7 +321,7 @@ class enum_flags<EnumType, enum_flags_mask_spec_t<decltype(Mask), Mask>> {
   }
 
  private:
-  enum_flags_impl_type flags_;
+  enum_flags_impl_type flags_ = {};
 };
 
 // == Deduction guides
