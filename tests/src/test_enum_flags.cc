@@ -5,14 +5,20 @@
 
 #include <bitset>
 #include <climits>
+#include <type_traits>
 
 #include <dlgr/enum_flags.h>
 
 namespace {
 
 using dlgr::enum_flags;
+
+using dlgr::enum_flags_mask_spec_t;
+using dlgr::enum_flags_mask_unspecified;
 using dlgr::enum_flags_mask_unspecified_t;
-using dlgr::make_enum_flags_mask_spec;
+
+using dlgr::enum_flags_mask;
+using dlgr::enum_flags_mask_t;
 
 constexpr auto to_bitset(auto flags) {
   using underlying_data_t = typename decltype(flags)::underlying_data_type;
@@ -103,9 +109,8 @@ TEST_CASE("enum_flags_wo_mask") {
 
 TEST_CASE("enum_flags_with_mask") {
   using test_flags_t =
-      enum_flags<my_flag,
-                 make_enum_flags_mask_spec<my_flag>::from_enums_t<
-                     my_flag::first, my_flag::second, my_flag::third, my_flag::first_and_second>>;
+      enum_flags<my_flag, enum_flags_mask_t<my_flag, my_flag::first, my_flag::second,
+                                            my_flag::third, my_flag::first_and_second>>;
 
   STATIC_CHECK(std::is_trivially_copyable_v<test_flags_t>);
   STATIC_CHECK(std::is_standard_layout_v<test_flags_t>);
@@ -187,8 +192,7 @@ TEST_CASE("enum_flags_with_mask") {
 
 TEST_CASE("enum_flags_with_custom_mask") {
   using test_flags_t =
-      enum_flags<my_flag,
-                 make_enum_flags_mask_spec<my_flag>::from_enums_t<my_flag::first, my_flag::third>>;
+      enum_flags<my_flag, enum_flags_mask_t<my_flag, my_flag::first, my_flag::third>>;
 
   STATIC_CHECK(std::is_trivially_copyable_v<test_flags_t>);
   STATIC_CHECK(std::is_standard_layout_v<test_flags_t>);
@@ -274,9 +278,92 @@ TEST_CASE("enum_flags_deductions") {
 
   STATIC_CHECK(std::is_same_v<decltype(enum_flags<my_flag>()),
                               enum_flags<my_flag, enum_flags_mask_unspecified_t>>);
+
+  STATIC_CHECK(std::is_same_v<decltype(enum_flags(my_flag::first, enum_flags_mask_unspecified)),
+                              enum_flags<my_flag, enum_flags_mask_unspecified_t>>);
+
+  STATIC_CHECK(
+      std::is_same_v<decltype(enum_flags(my_flag::first, enum_flags_mask<my_flag, my_flag::first>)),
+                     enum_flags<my_flag, enum_flags_mask_spec_t<std::uint8_t, 0b00000001>>>);
 }
 
 TEST_CASE("enum_flags_underlying_type") {
-  // TBD
+  {
+    enum test_enum : int { val1, val2, val3 };
+    auto flags = enum_flags(test_enum::val2);
+    using expected_type = enum_flags<test_enum, enum_flags_mask_unspecified_t>;
+    STATIC_CHECK(std::is_same_v<decltype(flags), expected_type>);
+    STATIC_CHECK(std::is_same_v<decltype(flags)::underlying_data_type, unsigned int>);
+    CHECK(to_bitset(flags) == 0x000000001);
+  }
+
+  {
+    enum test_enum : signed char { foo = -1, bar = -2, baz = -3 };
+    auto flags = enum_flags(test_enum::foo, enum_flags_mask<test_enum, test_enum::foo>);
+    using expected_type = enum_flags<test_enum, enum_flags_mask_spec_t<unsigned char, 0b11111111>>;
+    STATIC_CHECK(std::is_same_v<decltype(flags), expected_type>);
+    STATIC_CHECK(std::is_same_v<decltype(flags)::underlying_data_type, unsigned char>);
+    CHECK(to_bitset(flags) == 0b11111111);
+  }
+
+  {
+    enum class test_enum : std::intptr_t {
+      zero = 0,
+      one = zero + 1,
+      two = one + 1,
+    };
+    auto flags =
+        enum_flags(test_enum::zero,
+                   enum_flags_mask<test_enum, test_enum::zero, test_enum::one, test_enum::two>);
+    using expected_type =
+        enum_flags<test_enum, enum_flags_mask_spec_t<std::make_unsigned_t<std::intptr_t>, 3>>;
+    STATIC_CHECK(std::is_same_v<decltype(flags), expected_type>);
+    STATIC_CHECK(
+        std::is_same_v<decltype(flags)::underlying_data_type, std::make_unsigned_t<std::intptr_t>>);
+    CHECK(to_bitset(flags) == 0);
+  }
+
+  {
+    enum test_enum : std::uint64_t {
+      field_1 = (1ULL << 0U),
+      field_2 = (1ULL << 1U),
+      field_30 = (1ULL << 29U),
+      field_64 = (1ULL << 63U),
+    };
+    auto flags = enum_flags<test_enum>() | test_enum::field_64 | test_enum::field_30;
+    using expected_type = enum_flags<test_enum, enum_flags_mask_unspecified_t>;
+    STATIC_CHECK(std::is_same_v<decltype(flags), expected_type>);
+    STATIC_CHECK(std::is_same_v<decltype(flags)::underlying_data_type, std::uint64_t>);
+    CHECK(to_bitset(flags) == ((1ULL << 63U) | (1ULL << 29U)));
+  }
+
+  {
+    enum class test_enum : std::int16_t {
+      some = -112,
+      random = 17,
+      keys = 1076,
+    };
+    auto flags = enum_flags(test_enum::keys, enum_flags_mask_unspecified).set(test_enum::random);
+    using expected_type = enum_flags<test_enum, enum_flags_mask_unspecified_t>;
+    STATIC_CHECK(std::is_same_v<decltype(flags), expected_type>);
+    STATIC_CHECK(std::is_same_v<decltype(flags)::underlying_data_type, std::uint16_t>);
+    CHECK(to_bitset(flags) == (1076U | 17U));
+  }
+
+  {
+    enum class test_enum : long {  // NOLINT(runtime/int)
+      no_flags = 0L,
+      flag1 = (1UL << 0U),
+      flag2 = (1UL << 1U),
+      all_flags = flag1 | flag2,
+    };
+    auto flags = enum_flags<test_enum, enum_flags_mask_t<test_enum, test_enum::all_flags>>();
+    using expected_type =
+        enum_flags<test_enum, enum_flags_mask_spec_t<unsigned long, 0x3>>;  // NOLINT(runtime/int)
+    STATIC_CHECK(std::is_same_v<decltype(flags), expected_type>);
+    STATIC_CHECK(std::is_same_v<decltype(flags)::underlying_data_type,
+                                unsigned long>);  // NOLINT(runtime/int)
+    CHECK(to_bitset(flags) == 0);
+  }
 }
 // NOLINTEND

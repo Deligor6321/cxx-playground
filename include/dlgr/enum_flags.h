@@ -7,6 +7,24 @@
 
 namespace dlgr {
 
+// == Mask specification
+
+struct enum_flags_mask_unspecified_t {
+  // NOLINTNEXTLINE(runtime/explicit): Explicit default ctor for tag type
+  constexpr explicit enum_flags_mask_unspecified_t() noexcept = default;
+};
+
+inline constexpr enum_flags_mask_unspecified_t enum_flags_mask_unspecified{};
+
+template <std::unsigned_integral MaskType, MaskType MaskValue>
+struct enum_flags_mask_spec_t : std::integral_constant<MaskType, MaskValue> {
+  // NOLINTNEXTLINE(runtime/explicit): Explicit default ctor for tag type
+  constexpr explicit enum_flags_mask_spec_t() noexcept = default;
+};
+
+template <std::unsigned_integral MaskType, MaskType MaskValue>
+inline constexpr enum_flags_mask_spec_t<MaskType, MaskValue> enum_flags_mask_spec{};
+
 // == Implementation details declarations and utils
 
 namespace detail {
@@ -19,42 +37,28 @@ template <class EnumType, enum_flags_data_t<EnumType> EffectiveMask>
 class enum_flags_impl;
 
 template <class EnumType, EnumType... EnumValues>
-struct make_enum_flags_mask {
-  using enum_type = EnumType;
-  using enum_flags_data_type = detail::enum_flags_data_t<enum_type>;
+  requires std::is_enum_v<EnumType>
+struct make_enum_flags_mask_spec {
+ private:
+  using enum_flags_data_type = detail::enum_flags_data_t<EnumType>;
 
-  constexpr static auto value =
-      (enum_flags_data_type(0) | ... | std::bit_cast<enum_flags_data_type>(EnumValues));
+ public:
+  using type = enum_flags_mask_spec_t<enum_flags_data_type,
+                                      (enum_flags_data_type(0) | ... |
+                                       std::bit_cast<enum_flags_data_type>(EnumValues))>;
 };
-
-template <class EnumType, EnumType... EnumValues>
-constexpr inline auto make_enum_flags_mask_v = make_enum_flags_mask<EnumType, EnumValues...>::value;
 
 }  // namespace detail
 
-// == Mask specification
+// == Make mask utils
 
-struct enum_flags_mask_unspecified_t {};
-
-template <std::unsigned_integral MaskType, MaskType MaskValue>
-struct enum_flags_mask_spec_t : std::integral_constant<MaskType, MaskValue> {};
-
-template <class EnumType>
+template <class EnumType, EnumType... EnumValues>
   requires std::is_enum_v<EnumType>
-struct make_enum_flags_mask_spec {
-  template <EnumType... EnumValues>
-  struct from_enums {
-   private:
-    using mask_maker_type = detail::make_enum_flags_mask<EnumType, EnumValues...>;
+using enum_flags_mask_t = typename detail::make_enum_flags_mask_spec<EnumType, EnumValues...>::type;
 
-   public:
-    using type = enum_flags_mask_spec_t<typename mask_maker_type::enum_flags_data_type,
-                                        mask_maker_type::value>;
-  };
-
-  template <EnumType... EnumValues>
-  using from_enums_t = typename from_enums<EnumValues...>::type;
-};
+template <class EnumType, EnumType... EnumValues>
+  requires std::is_enum_v<EnumType>
+inline constexpr auto enum_flags_mask = enum_flags_mask_t<EnumType, EnumValues...>{};
 
 // == Template declaration
 
@@ -67,7 +71,7 @@ template <class EnumType>
   requires std::is_enum_v<EnumType>
 class enum_flags<EnumType, enum_flags_mask_unspecified_t> {
   using enum_flags_impl_type =
-      detail::enum_flags_impl<EnumType, static_cast<detail::enum_flags_data_t<EnumType>>(~0U)>;
+      detail::enum_flags_impl<EnumType, static_cast<detail::enum_flags_data_t<EnumType>>(~0ULL)>;
 
  public:
   // -- Member types
@@ -82,6 +86,10 @@ class enum_flags<EnumType, enum_flags_mask_unspecified_t> {
 
   [[nodiscard]] constexpr enum_flags(flag_type flag) noexcept  // NOLINT: Allow non-explicit ctor
       : flags_(flag) {}
+
+  [[nodiscard]] constexpr enum_flags(flag_type flag,
+                                     [[maybe_unused]] mask_spec_type mask_spec) noexcept
+      : enum_flags(flag) {}
 
   // -- Comparison
 
@@ -206,6 +214,10 @@ class enum_flags<EnumType, enum_flags_mask_spec_t<decltype(Mask), Mask>> {
   [[nodiscard]] constexpr enum_flags(flag_type flag) noexcept  // NOLINT: Allow non-explicit ctor
       : flags_(flag) {}
 
+  [[nodiscard]] constexpr enum_flags(flag_type flag,
+                                     [[maybe_unused]] mask_spec_type mask_spec) noexcept
+      : enum_flags(flag) {}
+
   // -- Comparison
 
   [[nodiscard]] constexpr auto operator==(const enum_flags&) const noexcept -> bool = default;
@@ -325,8 +337,13 @@ class enum_flags<EnumType, enum_flags_mask_spec_t<decltype(Mask), Mask>> {
 };
 
 // == Deduction guides
+
 template <class EnumType>
 enum_flags(EnumType) -> enum_flags<EnumType, enum_flags_mask_unspecified_t>;
+
+template <class EnumType>
+enum_flags(EnumType, enum_flags_mask_unspecified_t)
+    -> enum_flags<EnumType, enum_flags_mask_unspecified_t>;
 
 template <class EnumType, detail::enum_flags_data_t<EnumType> Mask>
 enum_flags(EnumType, enum_flags_mask_spec_t<detail::enum_flags_data_t<EnumType>, Mask>)
