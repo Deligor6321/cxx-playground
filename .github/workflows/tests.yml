@@ -36,22 +36,24 @@ jobs:
     - name: Configure runner (Ubuntu)
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
-        sudo apt-get update
-        sudo apt-get install conan
+        pip install conan
 
     - name: Configure runner (Windows)
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
         choco install conan
 
-    - name: Install dependencies
+    - name: Conan config
       run: |
         conan --version
         conan profile detect --force
-        conan install ${{ github.workspace }}/conanfile.py \
-          --profile:host=${{ github.workspace }}/conan/profiles/release \
-          --settings:host=compiler=${{ matrix.compiler }} \
-          --settings:build=compiler=${{ matrix.compiler }} \
+
+    - name: Install dependencies
+      run: >
+        conan install ${{ github.workspace }}/conanfile.py
+          --profile:host=${{ github.workspace }}/conan/profiles/release
+          --settings:host=compiler=${{ matrix.compiler }}
+          --settings:build=compiler=${{ matrix.compiler }}
           --build=missing
 
     - name: Configure CMake
