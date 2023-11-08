@@ -33,17 +33,12 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install compiler (Clang)
+    - name: Install and configure compiler (Clang)
       if: ${{ matrix.compiler == 'clang' }}
       uses: KyleMayes/install-llvm-action@v1
       with:
         version: "16.0"
-
-    - name: Configure compiler (Clang)
-      if: ${{ matrix.compiler == 'clang' }}
-      run: |
-        echo "CC=clang-16" >> $GITHUB_ENV
-        echo "CXX=clang++-16" >> $GITHUB_ENV
+        env: true
 
     - name: Configure compiler (GCC)
       if: ${{ matrix.compiler == 'gcc' }}
