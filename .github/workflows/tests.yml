@@ -33,28 +33,19 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Configure runner (Ubuntu)
-      if: ${{ matrix.os == 'ubuntu-latest' }}
+    - name: Configure runner
       run: |
         pip install conan
-
-    - name: Configure runner (Windows)
-      if: ${{ matrix.os == 'windows-latest' }}
-      run: |
-        choco install conan
-
-    - name: Conan config
-      run: |
         conan --version
         conan profile detect --force
 
     - name: Install dependencies
       run: >
         conan install ${{ github.workspace }}/conanfile.py
-          --profile:host=${{ github.workspace }}/conan/profiles/release
-          --settings:host=compiler=${{ matrix.compiler }}
-          --settings:build=compiler=${{ matrix.compiler }}
-          --build=missing
+        --profile:host=${{ github.workspace }}/conan/profiles/release
+        --settings:host=compiler=${{ matrix.compiler }}
+        --settings:build=compiler=${{ matrix.compiler }}
+        --build=missing
 
     - name: Configure CMake
       run: cmake --preset release
