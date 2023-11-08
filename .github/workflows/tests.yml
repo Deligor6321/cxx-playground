@@ -33,13 +33,19 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Setup env (Clang)
+    - name: Install compiler (Clang)
+      if: ${{ matrix.compiler == 'clang' }}
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: "16.0"
+
+    - name: Configure compiler (Clang)
       if: ${{ matrix.compiler == 'clang' }}
       run: |
         echo "CC=clang-16" >> $GITHUB_ENV
         echo "CXX=clang++-16" >> $GITHUB_ENV
 
-    - name: Setup env (GCC)
+    - name: Configure compiler (GCC)
       if: ${{ matrix.compiler == 'gcc' }}
       run: |
         echo "CC=gcc-13" >> $GITHUB_ENV
@@ -51,7 +57,7 @@ jobs:
         conan --version
         conan profile detect --force
 
-    - name: Install deps (Debug)
+    - name: Install deps - Debug
       run: >
         conan install ${{ github.workspace }}/conanfile.py
         --profile:host=${{ github.workspace }}/conan/profiles/ci/${{ matrix.compiler }}
@@ -59,7 +65,7 @@ jobs:
         --settings=build_type=Debug
         --build=missing
 
-    - name: Install deps (Release)
+    - name: Install deps - Release
       run: >
         conan install ${{ github.workspace }}/conanfile.py
         --profile:host=${{ github.workspace }}/conan/profiles/ci/${{ matrix.compiler }}
