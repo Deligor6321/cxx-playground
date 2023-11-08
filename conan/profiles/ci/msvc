@@ -1,0 +1,6 @@
+include(default)
+
+[settings]
+compiler=msvc
+compiler.cppstd=23
+compiler.version=193

@@ -1,0 +1,7 @@
+include(default)
+
+[settings]
+compiler=clang
+compiler.cppstd=gnu23
+compiler.libcxx=libc++
+compiler.version=16
