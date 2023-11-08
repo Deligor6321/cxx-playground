@@ -49,10 +49,10 @@ jobs:
         conan --version
         conan profile detect --force
         conan install ${{ github.workspace }}/conanfile.py \
-			    --profile:host=${{ github.workspace }}/conan/profiles/release \
+          --profile:host=${{ github.workspace }}/conan/profiles/release \
           --settings:host=compiler=${{ matrix.compiler }} \
           --settings:build=compiler=${{ matrix.compiler }} \
-			    --build=missing
+          --build=missing
 
     - name: Configure CMake
       run: cmake --preset release
