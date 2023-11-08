@@ -36,8 +36,8 @@ jobs:
     - name: Setup env (Clang)
       if: ${{ matrix.compiler == 'clang' }}
       run: |
-        echo "CC=clang" >> $GITHUB_ENV
-        echo "CXX=clang++" >> $GITHUB_ENV
+        echo "CC=clang-16" >> $GITHUB_ENV
+        echo "CXX=clang++-16" >> $GITHUB_ENV
 
     - name: Setup env (GCC)
       if: ${{ matrix.compiler == 'gcc' }}
@@ -51,7 +51,15 @@ jobs:
         conan --version
         conan profile detect --force
 
-    - name: Install dependencies
+    - name: Install deps (Debug)
+      run: >
+        conan install ${{ github.workspace }}/conanfile.py
+        --profile:host=${{ github.workspace }}/conan/profiles/ci/${{ matrix.compiler }}
+        --profile:build=${{ github.workspace }}/conan/profiles/ci/${{ matrix.compiler }}
+        --settings=build_type=Debug
+        --build=missing
+
+    - name: Install deps (Release)
       run: >
         conan install ${{ github.workspace }}/conanfile.py
         --profile:host=${{ github.workspace }}/conan/profiles/ci/${{ matrix.compiler }}
@@ -59,7 +67,7 @@ jobs:
         --settings=build_type=Release
         --build=missing
 
-    - name: Configure CMake
+    - name: Configure
       run: cmake --preset release
 
     - name: Build
