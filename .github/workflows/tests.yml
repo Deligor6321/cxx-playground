@@ -1,0 +1,61 @@
+name: Run tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        compiler: [msvc, clang, gcc]
+        include:
+          - os: windows-latest
+            compiler: msvc
+          - os: ubuntu-latest
+            compiler: gcc
+          - os: ubuntu-latest
+            compiler: clang
+        exclude:
+          - os: windows-latest
+            compiler: gcc
+          - os: windows-latest
+            compiler: clang
+          - os: ubuntu-latest
+            compiler: msvc
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure runner (Ubuntu)
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install conan
+
+    - name: Configure runner (Windows)
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        choco install conan
+
+    - name: Install dependencies
+      run: |
+        conan --version
+        conan profile detect --force
+        conan install ${{ github.workspace }}/conanfile.py \
+			    --profile:host=${{ github.workspace }}/conan/profiles/release \
+          --settings:host=compiler=${{ matrix.compiler }} \
+          --settings:build=compiler=${{ matrix.compiler }} \
+			    --build=missing
+
+    - name: Configure CMake
+      run: cmake --preset release
+
+    - name: Build
+      run: cmake --build --preset release
