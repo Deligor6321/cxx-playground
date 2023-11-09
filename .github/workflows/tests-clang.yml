@@ -36,6 +36,6 @@ jobs:
         conan profile detect --force
 
     - name: Run tests
-      uses: .github/actions/run_tests
+      uses: ./.github/actions/run_tests
       with:
         compiler: "clang"
