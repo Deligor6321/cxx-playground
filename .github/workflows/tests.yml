@@ -35,12 +35,14 @@ jobs:
 
     - name: Setup env (Ubuntu)
       if: ${{ matrix.os == 'ubuntu-latest' }}
+      shell: bash
       run: |
         echo "BUILD_TYPE=Release" >> $GITHUB_ENV
         echo "CMAKE_PRESET=conan-release" >> $GITHUB_ENV
 
     - name: Setup env (Windows)
       if: ${{ matrix.os == 'windows-latest' }}
+      shell: bash
       run: |
         echo "BUILD_TYPE=Release" >> $GITHUB_ENV
         echo "CMAKE_PRESET=conan-default" >> $GITHUB_ENV
@@ -64,17 +66,20 @@ jobs:
 
     - name: Configure compiler (GCC)
       if: ${{ matrix.compiler == 'gcc' }}
+      shell: bash
       run: |
         echo "CC=gcc-13" >> $GITHUB_ENV
         echo "CXX=g++-13" >> $GITHUB_ENV
 
     - name: Configure runner
+      shell: bash
       run: |
         pip install conan
         conan --version
         conan profile detect --force
 
     - name: Install deps
+      shell: bash
       run: >
         conan install ${{ github.workspace }}/conanfile.py
         --profile:host=${{ github.workspace }}/conan/profiles/ci/${{ matrix.compiler }}
@@ -83,7 +88,9 @@ jobs:
         --build=missing
 
     - name: Configure
+      shell: bash
       run: cmake --preset ${{ env.CMAKE_PRESET }}
 
     - name: Build
+      shell: bash
       run: cmake --build --preset ${{ env.CMAKE_PRESET }}
