@@ -38,14 +38,16 @@ jobs:
       shell: bash
       run: |
         echo "BUILD_TYPE=Release" >> $GITHUB_ENV
-        echo "CMAKE_PRESET=conan-release" >> $GITHUB_ENV
+        echo "CMAKE_CONFIG_PRESET=conan-release" >> $GITHUB_ENV
+        echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
 
     - name: Setup env (Windows)
       if: ${{ matrix.os == 'windows-latest' }}
       shell: bash
       run: |
         echo "BUILD_TYPE=Release" >> $GITHUB_ENV
-        echo "CMAKE_PRESET=conan-default" >> $GITHUB_ENV
+        echo "CMAKE_CONFIG_PRESET=conan-default" >> $GITHUB_ENV
+        echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
 
     - name: Cache LLVM
       if: ${{ matrix.compiler == 'clang' }}
@@ -91,8 +93,8 @@ jobs:
 
     - name: Configure
       shell: bash
-      run: cmake --preset ${{ env.CMAKE_PRESET }}
+      run: cmake --preset ${{ env.CMAKE_CONFIG_PRESET }}
 
     - name: Build
       shell: bash
-      run: cmake --build --preset ${{ env.CMAKE_PRESET }}
+      run: cmake --build --preset ${{ env.CMAKE_BUILD_PRESET }}
