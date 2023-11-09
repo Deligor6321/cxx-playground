@@ -3,4 +3,4 @@
 
 # Generated configs
 compile_commands.json
-ConanPresets.json
+CMakeUserPresets.json

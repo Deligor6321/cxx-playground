@@ -52,15 +52,7 @@ jobs:
         conan --version
         conan profile detect --force
 
-    - name: Install deps - Debug
-      run: >
-        conan install ${{ github.workspace }}/conanfile.py
-        --profile:host=${{ github.workspace }}/conan/profiles/ci/${{ matrix.compiler }}
-        --profile:build=${{ github.workspace }}/conan/profiles/ci/${{ matrix.compiler }}
-        --settings=build_type=Debug
-        --build=missing
-
-    - name: Install deps - Release
+    - name: Install deps
       run: >
         conan install ${{ github.workspace }}/conanfile.py
         --profile:host=${{ github.workspace }}/conan/profiles/ci/${{ matrix.compiler }}
@@ -69,7 +61,7 @@ jobs:
         --build=missing
 
     - name: Configure
-      run: cmake --preset release
+      run: cmake --preset conan-release
 
     - name: Build
-      run: cmake --build --preset release
+      run: cmake --build --preset conan-release

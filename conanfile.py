@@ -12,11 +12,10 @@ class CxxPlaygroundRecipe(ConanFile):
         self.requires("catch2/3.4.0")
 
     def generate(self):
-        deps = CMakeDeps(self)
-        deps.generate()
-        tc = CMakeToolchain(self)
-        tc.user_presets_path = "ConanPresets.json"
-        tc.generate()
+        cmake_deps = CMakeDeps(self)
+        cmake_deps.generate()
+        cmake_toolchain = CMakeToolchain(self)
+        cmake_toolchain.generate()
 
     def layout(self):
         cmake_layout(self)
