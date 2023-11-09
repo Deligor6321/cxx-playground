@@ -79,11 +79,13 @@ jobs:
         conan profile detect --force
 
     - name: Install deps
+      env:
+        CONAN_PROFILE: conan/profiles/ci/${{ matrix.compiler }}
       shell: bash
       run: >
-        conan install ${{ github.workspace }}/conanfile.py
-        --profile:host=${{ github.workspace }}/conan/profiles/ci/${{ matrix.compiler }}
-        --profile:build=${{ github.workspace }}/conan/profiles/ci/${{ matrix.compiler }}
+        conan install ./conanfile.py
+        --profile:host=${{ env.CONAN_PROFILE }}
+        --profile:build=${{ env.CONAN_PROFILE }}
         --settings=build_type=${{ env.BUILD_TYPE }}
         --build=missing
 
