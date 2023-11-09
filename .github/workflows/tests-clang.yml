@@ -1,0 +1,41 @@
+name: Run tests - Ubuntu/Clang
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: [ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Cache LLVM
+      id: cache-llvm
+      uses: actions/cache@v3
+      with:
+        path: |
+          ./llvm
+        key: llvm-16
+
+    - name: Install and configure compiler (Clang)
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: "16.0"
+        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+        env: true
+
+    - name: Configure runner
+      shell: bash
+      run: |
+        pip install conan
+        conan --version
+        conan profile detect --force
+
+    - name: Run tests
+      uses: .github/actions/run_tests
+      with:
+        compiler: "clang"
