@@ -16,6 +16,7 @@ runs:
       echo "BUILD_TYPE=Release" >> $GITHUB_ENV
       echo "CMAKE_CONFIG_PRESET=conan-release" >> $GITHUB_ENV
       echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
+      echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
 
   - name: Setup build options (Windows)
     if: ${{ runner.os == 'Windows' }}
@@ -24,6 +25,7 @@ runs:
       echo "BUILD_TYPE=Release" >> $GITHUB_ENV
       echo "CMAKE_CONFIG_PRESET=conan-default" >> $GITHUB_ENV
       echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
+      echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
 
   - name: Install deps
     env:
@@ -43,3 +45,7 @@ runs:
   - name: Build
     shell: bash
     run: cmake --build --preset ${{ env.CMAKE_BUILD_PRESET }}
+
+  - name: Run tests
+    shell: bash
+    run: ctest --preset ${{ env.CMAKE_TEST_PRESET }}

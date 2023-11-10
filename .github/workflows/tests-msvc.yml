@@ -1,4 +1,4 @@
-name: Run tests - Windows/MSVC
+name: msvc
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build_and_run_tests:
     runs-on: [windows-latest]
 
     steps:

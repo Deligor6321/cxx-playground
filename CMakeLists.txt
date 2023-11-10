@@ -21,6 +21,8 @@ else()
     -pedantic)
 endif()
 
+enable_testing()
+
 include_directories(include)
 
 add_subdirectory(benchmarks)

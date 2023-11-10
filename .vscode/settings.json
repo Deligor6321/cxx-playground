@@ -1,5 +1,4 @@
 {
-  "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
-  "cmake.buildDirectory": "${workspaceFolder}/build",
-  "editor.tabSize": 2
+  "editor.tabSize": 2,
+  "cmake.buildDirectory": "${workspaceFolder}/build"
 }
