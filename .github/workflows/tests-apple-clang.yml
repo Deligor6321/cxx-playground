@@ -8,7 +8,10 @@ on:
 
 jobs:
   build_and_run_tests:
-    runs-on: [macos-latest]
+    runs-on: [macos-13]
+
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_15.0.1.app/Contents/Developer
 
     steps:
     - uses: actions/checkout@v3
@@ -16,7 +19,7 @@ jobs:
     - name: Configure runner
       shell: bash
       run: |
-        pip install conan
+        pip3 install conan
         conan --version
         conan profile detect --force
 
