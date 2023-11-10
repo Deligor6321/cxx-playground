@@ -144,7 +144,9 @@ void bm_concurrent_atomic(benchmark::State& state) {
 }
 
 void bm_concurrent_flag(benchmark::State& state) {
-  auto ready_state = std::atomic_flag(true);
+  auto ready_state = std::atomic_flag();
+  ready_state.test_and_set();
+
   bool finish = false;
 
   auto other_thread = std::thread([&] {
