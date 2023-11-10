@@ -1,4 +1,4 @@
-name: msvc
+name: msvc-19.3/windows-2022
 
 on:
   push:
