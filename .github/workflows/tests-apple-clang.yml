@@ -1,0 +1,27 @@
+name: apple-clang
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build_and_run_tests:
+    runs-on: [macos-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure runner
+      shell: bash
+      run: |
+        pip install conan
+        conan --version
+        conan profile detect --force
+
+    - name: Run tests
+      uses: ./.github/actions/run_tests
+      with:
+        compiler: "apple-clang"
+

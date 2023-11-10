@@ -3,7 +3,7 @@ name: Run tests
 
 inputs:
   compiler:
-    description: 'msvc/gcc/clang'
+    description: 'msvc/gcc/clang/apple-clang'
     required: true
 
 runs:
@@ -24,6 +24,15 @@ runs:
     run: |
       echo "BUILD_TYPE=Release" >> $GITHUB_ENV
       echo "CMAKE_CONFIG_PRESET=conan-default" >> $GITHUB_ENV
+      echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
+      echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
+
+  - name: Setup build options (macOS)
+    if: ${{ runner.os == 'macOS' }}
+    shell: bash
+    run: |
+      echo "BUILD_TYPE=Release" >> $GITHUB_ENV
+      echo "CMAKE_CONFIG_PRESET=conan-release" >> $GITHUB_ENV
       echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
       echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
 
