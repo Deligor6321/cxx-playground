@@ -15,6 +15,7 @@ class CxxPlaygroundRecipe(ConanFile):
         cmake_deps = CMakeDeps(self)
         cmake_deps.generate()
         cmake_toolchain = CMakeToolchain(self)
+        cmake_toolchain.cache_variables["CMAKE_EXPORT_COMPILE_COMMANDS"] = True
         cmake_toolchain.generate()
 
     def layout(self):

@@ -36,7 +36,7 @@ CMAKE_TEST_PRESET_debug := conan-debug
 CONAN_PROFILE_release := $(CONAN_DIR)/profiles/release
 CONAN_PROFILE_debug := $(CONAN_DIR)/profiles/debug
 
-.PHONY : all init compile-commands clean install-deps config build test \
+.PHONY : help init compile-commands clean install-deps config build test \
 	$(foreach _build_target, $(BUILD_TARGETS), launch-$(_build_target)) \
 	$(foreach _build_target, $(BUILD_TARGETS), build-$(_build_target)) \
 	$(foreach _build_type, $(BUILD_TYPES), install-deps-$(_build_type)) \
@@ -46,7 +46,16 @@ CONAN_PROFILE_debug := $(CONAN_DIR)/profiles/debug
 	$(foreach _build_type, $(BUILD_TYPES), $(foreach _build_target, $(BUILD_TARGETS), build-$(_build_type)-$(_build_target))) \
 	$(foreach _build_type, $(BUILD_TYPES), $(foreach _build_target, $(BUILD_TARGETS), launch-$(_build_type)-$(_build_target)))
 
-all : init $(foreach _build_target, $(BUILD_TARGETS), launch-$(_build_target))
+help :
+	@echo "Available rules:"
+	@echo "  help               show this message"
+	@echo "  init               init the repo"
+	@echo "  compile-commands   genearte compile commands in the repo's root"
+	@echo "  clean              remove generated files"
+	@echo "  install-deps       install project dependencies"
+	@echo "  config             configure project with default build type"
+	@echo "  build              build project with default build type"
+	@echo "  test               run project tests with default build type"
 
 init : $(CONAN_CMAKE_PRESETS_FILE) $(ROOT_DIR)/$(COMPILE_COMMANDS)
 
@@ -70,7 +79,7 @@ install-deps : $(CONAN_CMAKE_PRESETS_FILE) $(foreach _build_type, $(BUILD_TYPES)
 
 define CONFIG_RULE
 config-$(1) $(BUILD_DIR_$(1))/$(CMAKE_GENERATOR_PRODUCT) $(BUILD_DIR_$(1))/$(COMPILE_COMMANDS) : $(CONAN_CMAKE_PRESETS_FILE) $(CMAKE_FILES)
-	cmake --preset $(CMAKE_CONFIG_PRESET_$(1)) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	cmake --preset $(CMAKE_CONFIG_PRESET_$(1))
 endef
 $(foreach _build_type, $(BUILD_TYPES), \
 	$(eval $(call CONFIG_RULE,$(_build_type))))
@@ -79,7 +88,7 @@ config : config-$(DEFAULT_BUILD_TYPE)
 
 define BUILD_TARGET_RULE
 build-$(1)-$(2) $(BUILD_DIR_$(1))/$(2)/$(2) : $(BUILD_DIR_$(1))/$(CMAKE_GENERATOR_PRODUCT) $(CONAN_CMAKE_PRESETS_FILE) $(SRC_FILES)
-	rm $(BUILD_DIR_$(1))/$(2)/$(2)
+	rm -f $(BUILD_DIR_$(1))/$(2)/$(2)
 	cmake --build --preset $(CMAKE_BUILD_PRESET_$(1)) --target $(2)
 endef
 $(foreach _build_type, $(BUILD_TYPES), \
