@@ -6,7 +6,9 @@ CONAN_DIR := $(ROOT_DIR)/conan
 # Build settings
 BUILD_TYPES := release debug
 DEFAULT_BUILD_TYPE := release
-BUILD_TARGETS := benchmarks tests
+SANITIZERS := ASan UBSan TSan
+TEST_TARGETS := $(foreach _san, $(SANITIZERS), utests-$(_san))
+BUILD_TARGETS := benchmarks $(TEST_TARGETS)
 CMAKE_GENERATOR := Ninja
 SOURCE_DIRS := include/dlgr tests/src benchmarks/src
 SOURCE_EXTENSIONS := cc h
@@ -39,7 +41,6 @@ CONAN_PROFILE_debug := $(CONAN_DIR)/profiles/debug
 .PHONY : help init compile-commands clean install-deps config build test \
 	$(foreach _build_target, $(BUILD_TARGETS), launch-$(_build_target)) \
 	$(foreach _build_target, $(BUILD_TARGETS), build-$(_build_target)) \
-	$(foreach _build_type, $(BUILD_TYPES), install-deps-$(_build_type)) \
 	$(foreach _build_type, $(BUILD_TYPES), config-$(_build_type)) \
 	$(foreach _build_type, $(BUILD_TYPES), build-$(_build_type)) \
 	$(foreach _build_type, $(BUILD_TYPES), test-$(_build_type)) \
@@ -48,14 +49,26 @@ CONAN_PROFILE_debug := $(CONAN_DIR)/profiles/debug
 
 help :
 	@echo "Available rules:"
-	@echo "  help               show this message"
-	@echo "  init               init the repo"
-	@echo "  compile-commands   genearte compile commands in the repo's root"
-	@echo "  clean              remove generated files"
-	@echo "  install-deps       install project dependencies"
-	@echo "  config             configure project with default build type"
-	@echo "  build              build project with default build type"
-	@echo "  test               run project tests with default build type"
+	@echo "  help                    show this message"
+	@echo "  init                    init the repo"
+	@echo "  compile-commands        genearte compile commands in the repo's root"
+	@echo "  clean                   remove generated files"
+	@echo "  install-deps            install project dependencies"
+	@echo "  config                  configure project with default build type"
+	@echo "  build                   build all targets with default build type"
+	@echo "  test                    run all tests with default build type"
+	@echo "  launch-{target}         run specific target with default build type"
+	@echo "  build-{target}          build specific target with default build type"
+	@echo "  config-{type}           configure project with specific build type"
+	@echo "  build-{type}            build all targets with specific build type"
+	@echo "  test-{type}             run all tests with specific build type"
+	@echo "  launch-{type}-{target}  run specific target with specific build type"
+	@echo "  build-{type}-{target}   build specific target with specific build type"
+	@echo ""
+	@echo "Build types: $(foreach _build_type,$(BUILD_TYPES),$(_build_type))"
+	@echo "Default build type: $(DEFAULT_BUILD_TYPE)"
+	@echo ""
+	@echo "Build targets: $(foreach _build_target,$(BUILD_TARGETS),$(_build_target))"
 
 init : $(CONAN_CMAKE_PRESETS_FILE) $(ROOT_DIR)/$(COMPILE_COMMANDS)
 
@@ -63,7 +76,7 @@ compile-commands $(ROOT_DIR)/$(COMPILE_COMMANDS) : $(BUILD_DIR_release)/$(COMPIL
 	cp $(BUILD_DIR_release)/$(COMPILE_COMMANDS) $(ROOT_DIR)/$(COMPILE_COMMANDS)
 
 define INSTALL_DEPS_RULE
-install-deps-$(1) $(BUILD_DIR_$(1))/$(CONAN_INSTALL_PRODUCT) : $(CONANFILE) $(CONAN_PROFILE_$(1))
+$(BUILD_DIR_$(1))/$(CONAN_INSTALL_PRODUCT) : $(CONANFILE) $(CONAN_PROFILE_$(1))
 	conan install $(CONANFILE)  \
 		--profile=$(CONAN_PROFILE_$(1)) \
 		--conf=tools.cmake.cmaketoolchain:generator=$(CMAKE_GENERATOR) \
@@ -72,10 +85,8 @@ endef
 $(foreach _build_type, $(BUILD_TYPES), \
 	$(eval $(call INSTALL_DEPS_RULE,$(_build_type))))
 
-$(CONAN_CMAKE_PRESETS_FILE) : $(foreach _build_type, $(BUILD_TYPES), $(BUILD_DIR_$(_build_type))/$(CONAN_INSTALL_PRODUCT))
+install-deps $(CONAN_CMAKE_PRESETS_FILE) : $(foreach _build_type, $(BUILD_TYPES), $(BUILD_DIR_$(_build_type))/$(CONAN_INSTALL_PRODUCT))
 	touch $(CONAN_CMAKE_PRESETS_FILE)
-
-install-deps : $(CONAN_CMAKE_PRESETS_FILE) $(foreach _build_type, $(BUILD_TYPES), install-deps-$(_build_type))
 
 define CONFIG_RULE
 config-$(1) $(BUILD_DIR_$(1))/$(CMAKE_GENERATOR_PRODUCT) $(BUILD_DIR_$(1))/$(COMPILE_COMMANDS) : $(CONAN_CMAKE_PRESETS_FILE) $(CMAKE_FILES)
@@ -124,7 +135,7 @@ $(foreach _build_target, $(BUILD_TARGETS), \
 	$(eval $(call LAUNCH_TARGET_DEFAULT_RULE,$(_build_target))))
 
 define TEST_RULE
-test-$(1) : $(CONAN_CMAKE_PRESETS_FILE) $(foreach _build_target, $(BUILD_TARGETS), $(BUILD_DIR_$(1))/$(_build_target)/$(_build_target))
+test-$(1) : $(CONAN_CMAKE_PRESETS_FILE) $(foreach _build_target, $(TEST_TARGETS), $(BUILD_DIR_$(1))/$(_build_target)/$(_build_target))
 	ctest --preset $(CMAKE_TEST_PRESET_$(1))
 endef
 $(foreach _build_type, $(BUILD_TYPES), \
