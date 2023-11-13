@@ -5,10 +5,10 @@ find_package(Catch2 3 REQUIRED)
 
 set(TESTS_SRC src/test_ring.cc src/test_enum_flags.cc)
 
-set(ASan_FLAGS -fsanitize=address -fno-omit-frame-pointer)
-set(MSan_FLAGS -fsanitize=memory -fno-omit-frame-pointer)
-set(UBSan_FLAGS -fsanitize=undefined -fno-omit-frame-pointer)
-set(TSan_FLAGS -fsanitize=thread -fno-omit-frame-pointer)
+set(ASan_FLAGS -fsanitize=address -fno-omit-frame-pointer -g)
+set(MSan_FLAGS -fsanitize=memory -fno-omit-frame-pointer -g)
+set(UBSan_FLAGS -fsanitize=undefined -fsanitize=bounds -fno-omit-frame-pointer -g)
+set(TSan_FLAGS -fsanitize=thread -fno-omit-frame-pointer -g)
 
 if(NOT (MSVC))
   set(SANITIZERS ASan UBSan TSan)

@@ -57,4 +57,4 @@ runs:
 
   - name: Run tests
     shell: bash
-    run: ctest --preset ${{ env.CMAKE_TEST_PRESET }}
+    run: ctest --preset ${{ env.CMAKE_TEST_PRESET }} --output-on-failure

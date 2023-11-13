@@ -136,7 +136,7 @@ $(foreach _build_target, $(BUILD_TARGETS), \
 
 define TEST_RULE
 test-$(1) : $(CONAN_CMAKE_PRESETS_FILE) $(foreach _build_target, $(TEST_TARGETS), $(BUILD_DIR_$(1))/$(_build_target)/$(_build_target))
-	ctest --preset $(CMAKE_TEST_PRESET_$(1))
+	ctest --preset $(CMAKE_TEST_PRESET_$(1)) --output-on-failure
 endef
 $(foreach _build_type, $(BUILD_TYPES), \
 	$(eval $(call TEST_RULE,$(_build_type))))
