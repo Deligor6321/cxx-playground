@@ -124,7 +124,7 @@ struct ring {
   constexpr ring() noexcept = default;
 
   template <std::ranges::forward_range RangeType>
-  constexpr static auto operator()(RangeType&& range) {
+  constexpr auto operator()(RangeType&& range) const {
     return ring_view(std::forward<RangeType>(range));
   }
 };
