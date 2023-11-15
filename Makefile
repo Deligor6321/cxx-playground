@@ -9,6 +9,7 @@ DEFAULT_BUILD_TYPE := release
 SANITIZERS := ASan UBSan TSan
 TEST_TARGETS := $(foreach _san, $(SANITIZERS), utests-$(_san))
 BUILD_TARGETS := benchmarks $(TEST_TARGETS)
+TEST_FAST_TARGET := $(firstword $(TEST_TARGETS))
 CMAKE_GENERATOR := Ninja
 SOURCE_DIRS := include/dlgr tests/src benchmarks/src
 SOURCE_EXTENSIONS := cc h
@@ -142,6 +143,15 @@ $(foreach _build_type, $(BUILD_TYPES), \
 	$(eval $(call TEST_RULE,$(_build_type))))
 
 test : test-$(DEFAULT_BUILD_TYPE)
+
+define TEST_FAST_RULE
+test-fast-$(1) : $(CONAN_CMAKE_PRESETS_FILE) $(BUILD_DIR_$(1))/$(TEST_FAST_TARGET)/$(TEST_FAST_TARGET)
+	ctest --preset $(CMAKE_TEST_PRESET_$(1)) -R ''^$(TEST_FAST_TARGET)$$' --output-on-failure
+endef
+$(foreach _build_type, $(BUILD_TYPES), \
+	$(eval $(call TEST_FAST_RULE,$(_build_type))))
+
+test-fast : test-fast-$(DEFAULT_BUILD_TYPE)
 
 clean:
 	rm -f $(CONAN_CMAKE_PRESETS_FILE)

@@ -8,6 +8,7 @@
 #include <utility>
 
 namespace dlgr {
+namespace ranges {
 
 template <std::ranges::forward_range RangeType>
   requires std::ranges::view<RangeType> && std::ranges::common_range<RangeType>
@@ -51,6 +52,8 @@ class ring_view<RangeType>::iterator {
   using sentinel = parent_type::sentinel;
 
  public:
+  // -- Member types
+
   using base_iterator_type = std::ranges::iterator_t<RangeType>;
 
   using difference_type = std::iter_difference_t<base_iterator_type>;
@@ -63,52 +66,214 @@ class ring_view<RangeType>::iterator {
       std::random_access_iterator_tag,
       typename std::iterator_traits<base_iterator_type>::iterator_category>;
 
-  constexpr iterator() noexcept = default;
+  // -- Constructors
 
-  constexpr iterator(base_iterator_type begin, base_iterator_type end)
+  [[nodiscard]] constexpr iterator() noexcept = default;
+
+  [[nodiscard]] constexpr iterator(base_iterator_type begin, base_iterator_type end)
       : iterator(begin, begin, end) {}
 
-  constexpr friend auto operator==([[maybe_unused]] sentinel sentinel, iterator iterator) -> bool {
-    return iterator.begin_ == iterator.end_;
-  }
+  // -- Data access
 
-  constexpr auto operator*() const -> reference { return *curr_; }
+  [[nodiscard]] constexpr auto operator*() const -> reference { return *curr_; }
+
+  // -- Operations
 
   constexpr auto operator++() -> iterator& {
+    if (empty()) {
+      return *this;
+    }
+
     ++curr_;
     if (curr_ == end_) {
       curr_ = begin_;
     }
+
     return *this;
   }
 
   constexpr auto operator++(int) -> iterator {
-    auto res = *this;
+    auto iter = *this;
     this->operator++();
-    return res;
+    return iter;
   }
 
   constexpr auto operator--() -> iterator&
     requires std::ranges::bidirectional_range<RangeType>
   {
+    if (empty()) {
+      return *this;
+    }
+
     if (curr_ == begin_) {
       curr_ = end_;
     }
     --curr_;
+
     return *this;
   }
 
   constexpr auto operator--(int) -> iterator
     requires std::ranges::bidirectional_range<RangeType>
   {
-    auto res = *this;
+    auto iter = *this;
     this->operator--();
-    return res;
+    return iter;
+  }
+
+  constexpr auto operator+=(difference_type diff) -> iterator&
+    requires std::ranges::random_access_range<RangeType>
+  {
+    if (empty()) {
+      return *this;
+    }
+
+    if constexpr (std::is_signed_v<difference_type>) {
+      if (diff < 0) {
+        return *this -= (-diff);
+      }
+    }
+
+    const auto len = std::ranges::distance(begin_, end_);
+    const auto to_end = curr_ == begin_ ? len : std::ranges::distance(curr_, end_);
+    if constexpr (std::is_integral_v<difference_type>) {
+      diff = (diff - to_end) % len;
+    } else {
+      if (diff > to_end) {
+        diff -= to_end;
+        while (diff >= len) {
+          diff -= len;
+        }
+      }
+    }
+
+    curr_ = begin_ + diff;
+    return *this;
+  }
+
+  constexpr auto operator-=(difference_type diff) -> iterator&
+    requires std::ranges::random_access_range<RangeType>
+  {
+    if (empty()) {
+      return *this;
+    }
+
+    if constexpr (std::is_signed_v<difference_type>) {
+      if (diff < 0) {
+        return *this += (-diff);
+      }
+    }
+
+    // rend = reverse end, rbegin = reverse begin
+    const auto len = std::ranges::distance(begin_, end_);
+    const auto rbegin = end_ - 1;
+    const auto to_rend = curr_ == rbegin ? len : std::ranges::distance(begin_, curr_) + 1;
+    if constexpr (std::is_integral_v<difference_type>) {
+      diff = (diff - to_rend) % len;
+    } else {
+      if (diff > to_rend) {
+        diff -= to_rend;
+        while (diff >= len) {
+          diff -= len;
+        }
+      }
+    }
+
+    curr_ = rbegin - diff;
+    return *this;
+  }
+
+  [[nodiscard]] constexpr auto operator[](difference_type diff) const -> reference
+    requires std::ranges::random_access_range<RangeType>
+  {
+    return *(*this + diff);
+  }
+
+  // -- Non-member operations
+
+  [[nodiscard]] constexpr friend auto operator==([[maybe_unused]] sentinel sentinel,
+                                                 const iterator& iterator) -> bool {
+    return iterator.empty();
+  }
+
+  [[nodiscard]] constexpr friend auto operator+(iterator iter, difference_type diff) -> iterator
+    requires std::ranges::random_access_range<RangeType>
+  {
+    iter += diff;
+    return iter;
+  }
+
+  [[nodiscard]] constexpr friend auto operator+(difference_type diff, iterator iter) -> iterator
+    requires std::ranges::random_access_range<RangeType>
+  {
+    iter += diff;
+    return iter;
+  }
+
+  [[nodiscard]] constexpr friend auto operator-(iterator iter, difference_type diff) -> iterator
+    requires std::ranges::random_access_range<RangeType>
+  {
+    iter -= diff;
+    return iter;
+  }
+
+  [[nodiscard]] constexpr friend auto operator-(difference_type diff, iterator iter) -> iterator
+    requires std::ranges::random_access_range<RangeType>
+  {
+    iter -= diff;
+    return iter;
+  }
+
+  [[nodiscard]] constexpr friend auto operator-(const iterator& lhs, const iterator& rhs)
+      -> difference_type
+    requires std::ranges::random_access_range<RangeType>
+  {
+    return lhs.curr_ - rhs.curr_;
+  }
+
+  // -- Comparison
+
+  [[nodiscard]] constexpr friend auto operator==(const iterator& lhs, const iterator& rhs) -> bool
+    requires std::equality_comparable<base_iterator_type>
+  {
+    return lhs.curr_ == rhs.curr_;
+  }
+
+  [[nodiscard]] constexpr friend auto operator<(const iterator& lhs, const iterator& rhs) -> bool
+    requires std::totally_ordered<base_iterator_type>
+  {
+    return lhs.curr_ < rhs.curr_;
+  }
+
+  [[nodiscard]] constexpr friend auto operator>(const iterator& lhs, const iterator& rhs) -> bool
+    requires std::totally_ordered<base_iterator_type>
+  {
+    return lhs.curr_ < rhs.curr_;
+  }
+
+  [[nodiscard]] constexpr friend auto operator<=(const iterator& lhs, const iterator& rhs) -> bool
+    requires std::totally_ordered<base_iterator_type>
+  {
+    return lhs.curr_ <= rhs.curr_;
+  }
+
+  [[nodiscard]] constexpr friend auto operator>=(const iterator& lhs, const iterator& rhs) -> bool
+    requires std::totally_ordered<base_iterator_type>
+  {
+    return lhs.curr_ <= rhs.curr_;
   }
 
  private:
   constexpr iterator(base_iterator_type curr, base_iterator_type begin, base_iterator_type end)
       : curr_{std::move(curr)}, begin_{std::move(begin)}, end_{std::move(end)} {}
+
+  [[nodiscard]] constexpr auto empty() const -> bool {
+    if constexpr (std::totally_ordered<base_iterator_type>) {
+      return begin_ >= end_;
+    } else {
+      return begin_ == end_;
+    }
+  }
 
   base_iterator_type curr_ = {};
   base_iterator_type begin_ = {};
@@ -118,6 +283,8 @@ class ring_view<RangeType>::iterator {
 template <class RangeType>
 ring_view(RangeType&&) -> ring_view<std::views::all_t<RangeType>>;
 
+}  // namespace ranges
+
 namespace views {
 
 struct ring {
@@ -125,7 +292,7 @@ struct ring {
 
   template <std::ranges::forward_range RangeType>
   constexpr auto operator()(RangeType&& range) const {
-    return ring_view(std::forward<RangeType>(range));
+    return ranges::ring_view(std::forward<RangeType>(range));
   }
 };
 
