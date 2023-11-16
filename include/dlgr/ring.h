@@ -252,6 +252,27 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
     return *(*this + diff);
   }
 
+  // -- Sentinel equality comparison
+
+  [[nodiscard]] constexpr auto operator==(const sentinel& sen) const -> bool {
+    if constexpr (std::integral<parent_type::bound_forth_type>) {
+      if (pos_ >= 0 && detail::uabs(pos_) >= sen.bound_forth_) {
+        return true;
+      }
+    }
+    if constexpr (std::integral<parent_type::bound_back_type>) {
+      if (pos_ < 0 && detail::uabs(pos_) > sen.bound_back_) {
+        return true;
+      }
+    }
+    return curr_ == end_;
+  }
+
+  [[nodiscard]] constexpr friend auto operator==(const sentinel& sen, const iterator& iter)
+      -> bool {
+    return iter == sen;
+  }
+
   // -- Non-member operations
 
   [[nodiscard]] constexpr friend auto operator+(iterator iter, difference_type diff) -> iterator
@@ -290,21 +311,6 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
   }
 
   // -- Comparison
-
-  [[nodiscard]] constexpr friend auto operator==(const sentinel& sen, const iterator& iter)
-      -> bool {
-    if constexpr (std::integral<parent_type::bound_forth_type>) {
-      if (iter.pos_ > 0 && detail::uabs(iter.pos_) >= sen.bound_forth_) {
-        return true;
-      }
-    }
-    if constexpr (std::integral<parent_type::bound_back_type>) {
-      if (iter.pos_ < 0 && detail::uabs(iter.pos_) > sen.bound_back_) {
-        return true;
-      }
-    }
-    return iter.curr_ == iter.end_;
-  }
 
   [[nodiscard]] constexpr friend auto operator==(const iterator& lhs, const iterator& rhs) -> bool
     requires std::equality_comparable<base_iterator_type>
@@ -434,6 +440,6 @@ ring(ranges::ring_view_unreachable_bound_t, BoundBackType)
 
 }  // namespace views
 
-// TODO(improve): reverse, output, borrow, non-common range?
+// TODO(improve): reverse, output, borrow, non-common range?, noexcept
 
 }  // namespace dlgr

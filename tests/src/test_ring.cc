@@ -156,6 +156,6 @@ TEST_CASE("ring_view") {
     CHECK(to_vector(nums) == std::vector<int>{134, 134, 134, 134, 134, 134, 134, 134, 134, 134});
   }
 
-  // TODO(tests): deduction guides
+  // TODO(tests): deduction guides, more bounds
 }
 // NOLINTEND
