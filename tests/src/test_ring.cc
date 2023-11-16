@@ -29,6 +29,12 @@ auto to_vector(RangeType&& range) {
   return out;
 }
 
+template <class T>
+using it_traits = std::iterator_traits<std::ranges::iterator_t<T>>;
+
+template <class T>
+using it_category = typename it_traits<T>::iterator_category;
+
 }  // namespace
 
 // NOLINTBEGIN
@@ -39,6 +45,7 @@ TEST_CASE("ring_view") {
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(nums)>);
     STATIC_CHECK(std::ranges::random_access_range<decltype(nums)>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::random_access_iterator_tag>);
 
     CHECK(to_vector(nums) == std::vector<int>{27, 24, 23, 11, 0, 27, 24, 23, 11, 0, 27});
   }
@@ -49,6 +56,7 @@ TEST_CASE("ring_view") {
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(nums)>);
     STATIC_CHECK(std::ranges::bidirectional_range<decltype(nums)>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::bidirectional_iterator_tag>);
 
     CHECK(to_vector(nums) == std::vector<int>{0, 11, 23, 24, 27, 0, 11, 23, 24});
   }
@@ -59,6 +67,7 @@ TEST_CASE("ring_view") {
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(nums)>);
     STATIC_CHECK(std::ranges::forward_range<decltype(nums)>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::forward_iterator_tag>);
 
     CHECK(to_vector(nums) == std::vector<int>{27, 0, 11, 23, 24, 27, 0, 11, 23, 24, 27, 0, 11});
   }
@@ -69,6 +78,7 @@ TEST_CASE("ring_view") {
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(chars)>);
     STATIC_CHECK(std::ranges::random_access_range<decltype(chars)>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(chars)>, std::random_access_iterator_tag>);
 
     CHECK(to_vector(chars) == std::vector<char>{'a', 'b', 'c', 'x', 'a', 'b', 'c'});
   }
@@ -79,6 +89,7 @@ TEST_CASE("ring_view") {
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(chars)>);
     STATIC_CHECK(std::ranges::random_access_range<decltype(chars)>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(chars)>, std::random_access_iterator_tag>);
 
     CHECK(to_vector(chars) == std::vector<char>{});
   }
@@ -88,6 +99,7 @@ TEST_CASE("ring_view") {
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(chars)>);
     STATIC_CHECK(std::ranges::random_access_range<decltype(chars)>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(chars)>, std::random_access_iterator_tag>);
 
     CHECK(to_vector(chars) == std::vector<char>{});
   }
@@ -97,6 +109,7 @@ TEST_CASE("ring_view") {
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(bools)>);
     STATIC_CHECK(std::ranges::random_access_range<decltype(bools)>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(bools)>, std::random_access_iterator_tag>);
 
     CHECK(to_vector(bools) == std::vector<bool>{});
   }
@@ -109,6 +122,7 @@ TEST_CASE("ring_view") {
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(dbls)>);
     STATIC_CHECK(std::ranges::random_access_range<decltype(dbls)>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(dbls)>, std::input_iterator_tag>);
 
     CHECK(to_vector(dbls) == std::vector<double>{13.0, 14.0, 15.0, 16.0, 17.0});
   }
@@ -119,6 +133,7 @@ TEST_CASE("ring_view") {
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(nums)>);
     STATIC_CHECK(std::ranges::random_access_range<decltype(nums)>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::random_access_iterator_tag>);
 
     auto it = std::ranges::begin(nums);
 
@@ -131,6 +146,16 @@ TEST_CASE("ring_view") {
     CHECK(*(it - 15) == 1);
   }
 
-  // TODO: reverse, output, borrow, bounds, non-common range?
+  {
+    auto nums = std::ranges::single_view<int>(134) | ring(10);
+
+    STATIC_CHECK(std::ranges::viewable_range<decltype(nums)>);
+    STATIC_CHECK(std::ranges::random_access_range<decltype(nums)>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::random_access_iterator_tag>);
+
+    CHECK(to_vector(nums) == std::vector<int>{134, 134, 134, 134, 134, 134, 134, 134, 134, 134});
+  }
+
+  // TODO(tests): deduction guides
 }
 // NOLINTEND
