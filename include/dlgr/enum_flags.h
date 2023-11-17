@@ -3,6 +3,7 @@
 #pragma once
 
 #include <bit>
+#include <cstdint>
 #include <type_traits>
 
 namespace dlgr {
@@ -44,7 +45,7 @@ struct make_enum_flags_mask_spec {
 
  public:
   using type = enum_flags_mask_spec_t<enum_flags_data_type,
-                                      (enum_flags_data_type(0) | ...
+                                      (enum_flags_data_type{} | ...
                                        | std::bit_cast<enum_flags_data_type>(EnumValues))>;
 };
 
@@ -71,7 +72,8 @@ template <class EnumType>
   requires std::is_enum_v<EnumType>
 class enum_flags<EnumType, enum_flags_mask_unspecified_t> {
   using enum_flags_impl_type =
-      detail::enum_flags_impl<EnumType, static_cast<detail::enum_flags_data_t<EnumType>>(~0ULL)>;
+      detail::enum_flags_impl<EnumType,
+                              static_cast<detail::enum_flags_data_t<EnumType>>(~std::uintmax_t{})>;
 
  public:
   // -- Member types
@@ -449,7 +451,7 @@ class enum_flags_impl {
   }
 
   [[nodiscard]] static constexpr auto none() noexcept -> enum_flags_impl {
-    return enum_flags_impl(0);
+    return enum_flags_impl(underlying_data_type{});
   }
 
   static constexpr auto can_represent(flag_type flag) noexcept -> bool {
@@ -460,7 +462,7 @@ class enum_flags_impl {
   [[nodiscard]] constexpr explicit enum_flags_impl(underlying_data_type flags_data) noexcept
       : flags_data_(flags_data & enum_flags_impl::effective_mask) {}
 
-  underlying_data_type flags_data_ = 0;
+  underlying_data_type flags_data_ = {};
 };
 
 }  // namespace detail
