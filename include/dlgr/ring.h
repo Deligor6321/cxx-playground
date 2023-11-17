@@ -73,9 +73,9 @@ class ring_view
   // -- Range operation
 
   [[nodiscard]] constexpr auto begin() -> iterator {
-    auto begin = std::ranges::begin(base_);
-    auto end = std::ranges::end(base_);
-    return iterator{begin, begin, end};
+    auto base_begin = std::ranges::begin(base_);
+    auto base_end = std::ranges::end(base_);
+    return iterator{base_begin, base_begin, base_end};
   }
 
   [[nodiscard]] constexpr auto end() const noexcept -> sentinel { return sentinel_; }

@@ -44,8 +44,8 @@ struct make_enum_flags_mask_spec {
 
  public:
   using type = enum_flags_mask_spec_t<enum_flags_data_type,
-                                      (enum_flags_data_type(0) | ... |
-                                       std::bit_cast<enum_flags_data_type>(EnumValues))>;
+                                      (enum_flags_data_type(0) | ...
+                                       | std::bit_cast<enum_flags_data_type>(EnumValues))>;
 };
 
 }  // namespace detail
@@ -193,8 +193,8 @@ template <class EnumType, detail::enum_flags_data_t<EnumType> Mask>
   requires std::is_enum_v<EnumType>
 class enum_flags<EnumType, enum_flags_mask_spec_t<decltype(Mask), Mask>> {
   using enum_flags_impl_type = detail::enum_flags_impl<EnumType, Mask>;
-  static_assert(enum_flags_mask_spec_t<decltype(Mask), Mask>::value ==
-                enum_flags_impl_type::effective_mask);
+  static_assert(enum_flags_mask_spec_t<decltype(Mask), Mask>::value
+                == enum_flags_impl_type::effective_mask);
 
  public:
   // -- Member types
