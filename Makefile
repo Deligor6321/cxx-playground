@@ -38,6 +38,12 @@ CMAKE_TEST_PRESET_release := conan-release
 CMAKE_TEST_PRESET_debug := conan-debug
 CONAN_PROFILE_release := $(CONAN_DIR)/profiles/release
 CONAN_PROFILE_debug := $(CONAN_DIR)/profiles/debug
+TARGET_SUBDIR_benchmarks := benchmarks
+define TARGET_SUBDIR_TESTS_DEF
+TARGET_SUBDIR_$(1) := tests
+endef
+$(foreach _test_target, $(TEST_TARGETS), \
+	$(eval $(call TARGET_SUBDIR_TESTS_DEF,$(_test_target))))
 
 .PHONY : help init compile-commands clean install-deps config build test \
 	$(foreach _build_target, $(BUILD_TARGETS), launch-$(_build_target)) \
@@ -99,8 +105,8 @@ $(foreach _build_type, $(BUILD_TYPES), \
 config : config-$(DEFAULT_BUILD_TYPE)
 
 define BUILD_TARGET_RULE
-build-$(1)-$(2) $(BUILD_DIR_$(1))/$(2)/$(2) : $(BUILD_DIR_$(1))/$(CMAKE_GENERATOR_PRODUCT) $(CONAN_CMAKE_PRESETS_FILE) $(SRC_FILES)
-	rm -f $(BUILD_DIR_$(1))/$(2)/$(2)
+build-$(1)-$(2) $(BUILD_DIR_$(1))/$(TARGET_SUBDIR_$(2))/$(2) : $(BUILD_DIR_$(1))/$(CMAKE_GENERATOR_PRODUCT) $(CONAN_CMAKE_PRESETS_FILE) $(SRC_FILES)
+	rm -f $(BUILD_DIR_$(1))/$(TARGET_SUBDIR_$(2))/$(2)
 	cmake --build --preset $(CMAKE_BUILD_PRESET_$(1)) --target $(2)
 endef
 $(foreach _build_type, $(BUILD_TYPES), \
@@ -122,8 +128,8 @@ $(foreach _build_type, $(BUILD_TYPES), \
 build : build-$(DEFAULT_BUILD_TYPE)
 
 define LAUNCH_TARGET_RULE
-launch-$(1)-$(2) : $(BUILD_DIR_$(1))/$(2)/$(2)
-	$(BUILD_DIR_$(1))/$(2)/$(2)
+launch-$(1)-$(2) : $(BUILD_DIR_$(1))/$(TARGET_SUBDIR_$(2))/$(2)
+	$(BUILD_DIR_$(1))/$(TARGET_SUBDIR_$(2))/$(2)
 endef
 $(foreach _build_type, $(BUILD_TYPES), \
 	$(foreach _build_target, $(BUILD_TARGETS), \
@@ -152,6 +158,9 @@ $(foreach _build_type, $(BUILD_TYPES), \
 	$(eval $(call TEST_FAST_RULE,$(_build_type))))
 
 test-fast : test-fast-$(DEFAULT_BUILD_TYPE)
+
+iwyu : $(ROOT_DIR)/$(COMPILE_COMMANDS)
+	iwyu_tool.py -p $(ROOT_DIR) -- -Xiwyu --mapping_file=$(ROOT_DIR)/tools/iwyu/libcxx.imp
 
 clean:
 	rm -f $(CONAN_CMAKE_PRESETS_FILE)
