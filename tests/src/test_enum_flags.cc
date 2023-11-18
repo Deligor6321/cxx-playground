@@ -5,6 +5,7 @@
 
 #include <bitset>
 #include <climits>
+#include <cstdint>
 #include <type_traits>
 
 #include <dlgr/enum_flags.h>
