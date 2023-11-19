@@ -16,12 +16,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Configure compiler
+    - name: Configure compiler & tools
       uses: aminya/setup-cpp@v1
       with:
         compiler: llvm-${{ env.LLVM_VERSION }}
         clangtidy: ${{ env.LLVM_VERSION }}
         clangformat: ${{ env.LLVM_VERSION }}
+        cppcheck: true
         make: true
         cmake: true
         ninja: true
@@ -36,7 +37,7 @@ jobs:
     - name: Configure tools
       shell: bash
       run: |
-        pip install cpplint cppcheck
+        pip install cpplint
         cpplint --version
         cppcheck --version
         clang-tidy --version

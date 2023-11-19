@@ -165,7 +165,7 @@ iwyu : $(ROOT_DIR)/$(COMPILE_COMMANDS)
 	iwyu_tool.py -p $(ROOT_DIR) -- -Xiwyu --mapping_file=$(ROOT_DIR)/tools/iwyu/libcxx.imp
 
 cppcheck :
-	cppcheck -q --error-exitcode=1 --enable=all --std=c++23 --language=c++ \
+	cppcheck -v --error-exitcode=1 --enable=all --language=c++ \
 		--suppress=unmatchedSuppression --suppress=missingIncludeSystem --suppress=unusedFunction \
 		--inline-suppr --suppressions-list=cppcheck-suppressions.list \
 		$(SRC_FILES)
