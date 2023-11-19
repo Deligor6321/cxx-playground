@@ -17,11 +17,11 @@ jobs:
       uses: aminya/setup-cpp@v1
       with:
         compiler: llvm-16.0.6
+        conan: 2.0.13
         cmake: true
-        conan: true
         cppcheck: true
         clangtidy: true
-        clangformat: "15.0.7"
+        clangformat: true
 
     - name: Configure conan
       shell: bash
@@ -31,5 +31,5 @@ jobs:
 
     - name: Run tests
       shell: bash
-      run: make init
+      run: make build
 
