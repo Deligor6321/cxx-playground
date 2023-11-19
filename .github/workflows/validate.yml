@@ -33,6 +33,7 @@ jobs:
         pip install conan
         conan --version
         conan profile detect --force
+        sed -i 's/libstdc++.*/libc++/' ~/.conan2/profiles/default
 
     - name: Configure tools
       shell: bash
