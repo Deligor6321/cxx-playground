@@ -11,19 +11,17 @@ jobs:
     runs-on: [ubuntu-22.04]
 
     env:
-      LLVM_VERSION: "17.0.5"
+      LLVM_VERSION: "16.0.6"
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Configure runner
+    - name: Configure compiler
       uses: aminya/setup-cpp@v1
       with:
         compiler: llvm-${{ env.LLVM_VERSION }}
         clangtidy: ${{ env.LLVM_VERSION }}
         clangformat: ${{ env.LLVM_VERSION }}
-        cppcheck: 2.12.1
-        conan: 2.0.13
         make: true
         cmake: true
         ninja: true
@@ -31,8 +29,18 @@ jobs:
     - name: Configure conan
       shell: bash
       run: |
+        pip install conan
         conan --version
         conan profile detect --force
+
+    - name: Configure tools
+      shell: bash
+      run: |
+        pip install cpplint cppcheck
+        cpplint --version
+        cppcheck --version
+        clang-tidy --version
+        clang-foramt --version
 
     - name: Run tests
       shell: bash
