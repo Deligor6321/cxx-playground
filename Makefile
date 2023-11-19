@@ -47,7 +47,7 @@ $(foreach _test_target, $(TEST_TARGETS), \
 	$(eval $(call TARGET_SUBDIR_TESTS_DEF,$(_test_target))))
 
 .PHONY : help init compile-commands clean install-deps config build test \
-	iwyu cppcheck validate \
+	iwyu cppcheck clang-format validate \
 	$(foreach _build_target, $(BUILD_TARGETS), launch-$(_build_target)) \
 	$(foreach _build_target, $(BUILD_TARGETS), build-$(_build_target)) \
 	$(foreach _build_type, $(BUILD_TYPES), config-$(_build_type)) \
@@ -164,17 +164,16 @@ test-fast : test-fast-$(DEFAULT_BUILD_TYPE)
 iwyu : $(ROOT_DIR)/$(COMPILE_COMMANDS)
 	iwyu_tool.py -p $(ROOT_DIR) -- -Xiwyu --mapping_file=$(ROOT_DIR)/tools/iwyu/libcxx.imp
 
-define CPPCHECK_CMD
-cppcheck -q --error-exitcode=1 --enable=all --std=c++23 --language=c++ \
-	--suppress=unmatchedSuppression --suppress=missingIncludeSystem --suppress=unusedFunction \
-	--inline-suppr --suppressions-list=cppcheck-suppressions.list \
-	$(1)
-endef
 cppcheck :
-	$(foreach _src_file, $(SRC_FILES), \
-		$(call CPPCHECK_CMD,$(_src_file)) $(CMD_AND)) true
+	cppcheck -q --error-exitcode=1 --enable=all --std=c++23 --language=c++ \
+		--suppress=unmatchedSuppression --suppress=missingIncludeSystem --suppress=unusedFunction \
+		--inline-suppr --suppressions-list=cppcheck-suppressions.list \
+		$(SRC_FILES)
 
-validate : cppcheck
+clang-format :
+	clang-format -n --Werror $(SRC_FILES)
+
+validate : cppcheck clang-format
 
 clean:
 	rm -f $(CONAN_CMAKE_PRESETS_FILE)
