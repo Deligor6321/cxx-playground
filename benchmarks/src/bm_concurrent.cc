@@ -7,7 +7,6 @@
 #include <mutex>
 #include <semaphore>
 #include <shared_mutex>
-#include <string>
 #include <thread>
 
 namespace {

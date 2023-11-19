@@ -1,5 +1,5 @@
 ---
-Checks: '*,-altera-*,-fuchsia-*,-zircon-*,-llvmlibc-*,-llvm-header-guard'
+Checks: '*,-altera-*,-fuchsia-*,-zircon-*,-llvmlibc-*,-llvm-header-guard,-cppcoreguidelines-missing-std-forward,-misc-const-correctness'
 WarningsAsErrors: '*'
 HeaderFilterRegex: ''
 FormatStyle:     none
