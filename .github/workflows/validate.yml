@@ -11,7 +11,7 @@ jobs:
     runs-on: [ubuntu-22.04]
 
     env:
-      LLVM_VERSION: "16.0.6"
+      LLVM_VERSION: "16.0"
 
     steps:
     - uses: actions/checkout@v3
@@ -36,7 +36,7 @@ jobs:
       run: |
         pip install conan
         conan --version
-        conan profile detect --force
+        conan profile detect --force --name base
         cp conan/profiles/clang-16 $(dirname $(conan profile path base))/default
 
     - name: Configure tools
