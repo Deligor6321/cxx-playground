@@ -10,6 +10,7 @@ SANITIZERS := ASan UBSan TSan
 TEST_TARGETS := $(foreach _san, $(SANITIZERS), utests-$(_san))
 BUILD_TARGETS := benchmarks $(TEST_TARGETS)
 TEST_FAST_TARGET := $(firstword $(TEST_TARGETS))
+CONAN_PROFILE := default
 CMAKE_GENERATOR := Ninja
 SOURCE_DIRS := include/dlgr tests/src benchmarks/src
 SOURCE_EXTENSIONS := cc h
@@ -37,8 +38,8 @@ CMAKE_BUILD_PRESET_release := conan-release
 CMAKE_BUILD_PRESET_debug := conan-debug
 CMAKE_TEST_PRESET_release := conan-release
 CMAKE_TEST_PRESET_debug := conan-debug
-CONAN_PROFILE_release := $(CONAN_DIR)/profiles/release
-CONAN_PROFILE_debug := $(CONAN_DIR)/profiles/debug
+CONAN_BUILD_TYPE_release := Release
+CONAN_BUILD_TYPE_debug := Debug
 TARGET_SUBDIR_benchmarks := benchmarks
 define TARGET_SUBDIR_TESTS_DEF
 TARGET_SUBDIR_$(1) := tests
@@ -85,9 +86,10 @@ compile-commands $(ROOT_DIR)/$(COMPILE_COMMANDS) : $(BUILD_DIR_release)/$(COMPIL
 	cp $(BUILD_DIR_release)/$(COMPILE_COMMANDS) $(ROOT_DIR)/$(COMPILE_COMMANDS)
 
 define INSTALL_DEPS_RULE
-$(BUILD_DIR_$(1))/$(CONAN_INSTALL_PRODUCT) : $(CONANFILE) $(CONAN_PROFILE_$(1))
+$(BUILD_DIR_$(1))/$(CONAN_INSTALL_PRODUCT) : $(CONANFILE)
 	conan install $(CONANFILE)  \
-		--profile=$(CONAN_PROFILE_$(1)) \
+		--profile=$(CONAN_PROFILE) \
+		--settings=build_type=$(CONAN_BUILD_TYPE_$(1)) \
 		--conf=tools.cmake.cmaketoolchain:generator=$(CMAKE_GENERATOR) \
 		--build=missing
 endef

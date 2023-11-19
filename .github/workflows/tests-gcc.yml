@@ -24,9 +24,8 @@ jobs:
       run: |
         pip install conan
         conan --version
-        conan profile detect --force
+        conan profile detect --force --name base
+        cp conan/profiles/gcc-13 $(dirname $(conan profile path base))/default
 
     - name: Run tests
       uses: ./.github/actions/run_tests
-      with:
-        compiler: "gcc"

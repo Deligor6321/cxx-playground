@@ -18,10 +18,9 @@ jobs:
       run: |
         pip install conan
         conan --version
-        conan profile detect --force
+        conan profile detect --force --name base
+        cp conan/profiles/msvc-19.3 $(dirname $(conan profile path base))/default
 
     - name: Run tests
       uses: ./.github/actions/run_tests
-      with:
-        compiler: "msvc"
 

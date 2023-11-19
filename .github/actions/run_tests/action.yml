@@ -1,11 +1,6 @@
 
 name: Run tests
 
-inputs:
-  compiler:
-    description: 'msvc/gcc/clang/apple-clang'
-    required: true
-
 runs:
   using: 'composite'
   steps:
@@ -37,13 +32,9 @@ runs:
       echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
 
   - name: Install deps
-    env:
-      CONAN_PROFILE: conan/profiles/ci/${{ inputs.compiler }}
     shell: bash
     run: >
       conan install ./conanfile.py
-      --profile:host=${{ env.CONAN_PROFILE }}
-      --profile:build=${{ env.CONAN_PROFILE }}
       --settings=build_type=${{ env.BUILD_TYPE }}
       --build=missing
 

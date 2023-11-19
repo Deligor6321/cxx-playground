@@ -1,4 +1,0 @@
-include(base)
-
-[settings]
-build_type=Release

@@ -16,16 +16,20 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Configure compiler & tools
-      uses: aminya/setup-cpp@v1
+    - name: Cache LLVM
+      id: cache-llvm
+      uses: actions/cache@v3
       with:
-        compiler: llvm-${{ env.LLVM_VERSION }}
-        clangtidy: ${{ env.LLVM_VERSION }}
-        clangformat: ${{ env.LLVM_VERSION }}
-        cppcheck: true
-        make: true
-        cmake: true
-        ninja: true
+        path: |
+          ./llvm
+        key: llvm-${{ env.LLVM_VERSION }}
+
+    - name: Install and configure compiler
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: ${{ env.LLVM_VERSION }}
+        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+        env: true
 
     - name: Configure conan
       shell: bash
@@ -33,18 +37,20 @@ jobs:
         pip install conan
         conan --version
         conan profile detect --force
-        sed -i 's/libstdc++.*/libc++/' ~/.conan2/profiles/default
+        cp conan/profiles/clang-16 $(dirname $(conan profile path base))/default
 
     - name: Configure tools
       shell: bash
       run: |
+        sudo apt-get update
+        sudo apt-get install cppcheck ninja
         pip install cpplint
         cpplint --version
         cppcheck --version
         clang-tidy --version
         clang-format --version
 
-    - name: Run tests
+    - name: Validate
       shell: bash
       run: make -k validate
 
