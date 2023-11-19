@@ -41,7 +41,7 @@ jobs:
         cpplint --version
         cppcheck --version
         clang-tidy --version
-        clang-foramt --version
+        clang-format --version
 
     - name: Run tests
       shell: bash
