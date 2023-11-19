@@ -7,8 +7,11 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build_and_run_tests:
+  validate:
     runs-on: [ubuntu-22.04]
+
+    env:
+      LLVM_VERSION: "17.0.5"
 
     steps:
     - uses: actions/checkout@v3
@@ -16,10 +19,10 @@ jobs:
     - name: Configure runner
       uses: aminya/setup-cpp@v1
       with:
-        compiler: llvm-16.0.6
-        clangtidy: 16.0.6
-        clangformat: 16.0.6
-        cppcheck: true
+        compiler: llvm-${{ env.LLVM_VERSION }}
+        clangtidy: ${{ env.LLVM_VERSION }}
+        clangformat: ${{ env.LLVM_VERSION }}
+        cppcheck: 2.12.1
         conan: 2.0.13
         make: true
         cmake: true

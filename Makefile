@@ -47,7 +47,7 @@ $(foreach _test_target, $(TEST_TARGETS), \
 	$(eval $(call TARGET_SUBDIR_TESTS_DEF,$(_test_target))))
 
 .PHONY : help init compile-commands clean install-deps config build test \
-	iwyu cppcheck clang-format validate \
+	iwyu cppcheck clang-format clang-tidy validate \
 	$(foreach _build_target, $(BUILD_TARGETS), launch-$(_build_target)) \
 	$(foreach _build_target, $(BUILD_TARGETS), build-$(_build_target)) \
 	$(foreach _build_type, $(BUILD_TYPES), config-$(_build_type)) \
@@ -173,7 +173,11 @@ cppcheck :
 clang-format :
 	clang-format -n --Werror $(SRC_FILES)
 
-validate : cppcheck clang-format
+clang-tidy : $(ROOT_DIR)/$(COMPILE_COMMANDS)
+	clang-tidy $(SRC_FILES)
+
+# TODO(improve): Add cpplint, iwyu
+validate : cppcheck clang-format clang-tidy
 
 clean:
 	rm -f $(CONAN_CMAKE_PRESETS_FILE)
