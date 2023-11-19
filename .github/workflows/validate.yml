@@ -43,7 +43,7 @@ jobs:
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install cppcheck ninja-build include-what-you-use
+        sudo apt-get install cppcheck ninja-build iwyu
         pip install cpplint
         cpplint --version
         cppcheck --version
