@@ -24,13 +24,6 @@ jobs:
           ./llvm
         key: llvm-${{ env.LLVM_VERSION }}
 
-    - name: Install and configure compiler
-      uses: KyleMayes/install-llvm-action@v1
-      with:
-        version: ${{ env.LLVM_VERSION }}
-        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
-        env: true
-
     - name: Install and configure tools
       shell: bash
       run: |
@@ -45,13 +38,13 @@ jobs:
         pipx install clang-tidy==17.0.1
         pipx ensurepath
         echo $(pipx environment --value PIPX_BIN_DIR) >> $GITHUB_PATH
-        echo $PATH
 
-        conan --version
-        cpplint --version
-        cppcheck --version
-        clang-tidy --version
-        clang-format --version
+    - name: Install and configure compiler
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: ${{ env.LLVM_VERSION }}
+        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+        env: true
 
     - name: Configure conan
       shell: bash
@@ -61,5 +54,14 @@ jobs:
 
     - name: Validate
       shell: bash
-      run: make -k validate
+      run: |
+        echo $PATH
+
+        conan --version
+        cpplint --version
+        cppcheck --version
+        clang-tidy --version
+        clang-format --version
+
+        make -k validate
 
