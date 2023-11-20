@@ -56,6 +56,12 @@ jobs:
         conan profile detect --force --name base
         cp conan/profiles/clang-16 $(dirname $(conan profile path base))/default
 
+        echo $(pipx environment --value PIPX_BIN_DIR) >> $GITHUB_PATH
+
+        pipx environment --value PIPX_BIN_DIR
+        cat $GITHUB_PATH
+        echo $PATH
+
     - name: Validate
       shell: bash
       run: |
