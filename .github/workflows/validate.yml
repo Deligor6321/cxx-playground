@@ -31,24 +31,26 @@ jobs:
         cached: ${{ steps.cache-llvm.outputs.cache-hit }}
         env: true
 
-    - name: Configure conan
-      shell: bash
-      run: |
-        pip install conan
-        conan --version
-        conan profile detect --force --name base
-        cp conan/profiles/clang-16 $(dirname $(conan profile path base))/default
-
-    - name: Configure tools
+    - name: Install and configure tools
       shell: bash
       run: |
         sudo apt-get update
         sudo apt-get install cppcheck ninja-build iwyu
-        pip install cpplint clang-format==16.0.6 clang-tidy==17.0.1
+
+        pipx install conan cpplint clang-format==16.0.6 clang-tidy==17.0.1
+        pipx ensurepath
+
+        conan --version
         cpplint --version
         cppcheck --version
         clang-tidy --version
         clang-format --version
+
+    - name: Configure conan
+      shell: bash
+      run: |
+        conan profile detect --force --name base
+        cp conan/profiles/clang-16 $(dirname $(conan profile path base))/default
 
     - name: Validate
       shell: bash
