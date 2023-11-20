@@ -43,7 +43,7 @@ jobs:
         pipx install cpplint
         pipx install clang-format==16.0.6
         pipx install clang-tidy==17.0.1
-        pipx ensurepath
+        pipx ensurepath --force
 
         conan --version
         cpplint --version
