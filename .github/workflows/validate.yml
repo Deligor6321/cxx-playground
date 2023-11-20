@@ -44,7 +44,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install cppcheck ninja-build iwyu
-        pip install cpplint
+        pip install cpplint clang-format==16.0.6 clang-tidy==17.0.1
         cpplint --version
         cppcheck --version
         clang-tidy --version
