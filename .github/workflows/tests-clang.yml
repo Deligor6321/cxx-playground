@@ -22,7 +22,7 @@ jobs:
       with:
         path: |
           ./llvm
-        key: llvm-${{ env.LLVM_VERSION }}
+        key: ${{ runner.os }}-${{ runner.arch }}__llvm-${{ env.LLVM_VERSION }}
 
     - name: Install and configure compiler
       uses: KyleMayes/install-llvm-action@v1

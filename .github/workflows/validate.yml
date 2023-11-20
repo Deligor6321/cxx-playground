@@ -22,7 +22,14 @@ jobs:
       with:
         path: |
           ./llvm
-        key: llvm-${{ env.LLVM_VERSION }}
+        key: ${{ runner.os }}-${{ runner.arch }}__llvm-${{ env.LLVM_VERSION }}
+
+    - name: Install and configure compiler
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: ${{ env.LLVM_VERSION }}
+        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+        env: true
 
     - name: Install and configure tools
       shell: bash
@@ -36,19 +43,7 @@ jobs:
         pipx install cpplint
         pipx install clang-format==16.0.6
         pipx install clang-tidy==17.0.1
-        pipx ensurepath
         echo $(pipx environment --value PIPX_BIN_DIR) >> $GITHUB_PATH
-
-        pipx environment --value PIPX_BIN_DIR
-        cat $GITHUB_PATH
-        echo $PATH
-
-    - name: Install and configure compiler
-      uses: KyleMayes/install-llvm-action@v1
-      with:
-        version: ${{ env.LLVM_VERSION }}
-        cached: ${{ steps.cache-llvm.outputs.cache-hit }}
-        env: true
 
     - name: Configure conan
       shell: bash
@@ -56,23 +51,7 @@ jobs:
         conan profile detect --force --name base
         cp conan/profiles/clang-16 $(dirname $(conan profile path base))/default
 
-        echo $(pipx environment --value PIPX_BIN_DIR) >> $GITHUB_PATH
-
-        pipx environment --value PIPX_BIN_DIR
-        cat $GITHUB_PATH
-        echo $PATH
-
     - name: Validate
       shell: bash
-      run: |
-        cat $GITHUB_PATH
-        echo $PATH
-
-        conan --version
-        cpplint --version
-        cppcheck --version
-        clang-tidy --version
-        clang-format --version
-
-        make -k validate
+      run: make -k validate
 
