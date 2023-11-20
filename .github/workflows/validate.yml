@@ -39,6 +39,10 @@ jobs:
         pipx ensurepath
         echo $(pipx environment --value PIPX_BIN_DIR) >> $GITHUB_PATH
 
+        pipx environment --value PIPX_BIN_DIR
+        cat $GITHUB_PATH
+        echo $PATH
+
     - name: Install and configure compiler
       uses: KyleMayes/install-llvm-action@v1
       with:
@@ -55,6 +59,7 @@ jobs:
     - name: Validate
       shell: bash
       run: |
+        cat $GITHUB_PATH
         echo $PATH
 
         conan --version
