@@ -1,5 +1,8 @@
 ---
-Checks: '*,-altera-*,-fuchsia-*,-zircon-*,-llvmlibc-*,-llvm-header-guard,-cppcoreguidelines-missing-std-forward,-misc-const-correctness'
+Checks: >
+  *,
+  -altera-*,-fuchsia-*,-zircon-*,-llvmlibc-*,-llvm-header-guard,
+  -cppcoreguidelines-missing-std-forward,-misc-const-correctness,
 WarningsAsErrors: '*'
-HeaderFilterRegex: 'dlgr.*'
-FormatStyle:     none
+HeaderFilterRegex: 'dlgr/.*'
+FormatStyle: none
