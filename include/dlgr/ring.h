@@ -140,39 +140,25 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
 
   // -- Operations
 
-  constexpr auto operator++() -> iterator& {
-    ++curr_;
-    if (curr_ == end_) {
-      ++pos_;
-      curr_ = begin_;
-    }
-
-    return *this;
-  }
+  constexpr auto operator++() -> iterator& { return inc(); }
 
   constexpr auto operator++(int) -> iterator {
     auto iter = *this;
-    this->operator++();
+    inc();
     return iter;
   }
 
   constexpr auto operator--() -> iterator&
     requires std::ranges::bidirectional_range<parent_base_type>
   {
-    if (curr_ == begin_) {
-      curr_ = end_;
-      --pos_;
-    }
-    --curr_;
-
-    return *this;
+    return dec();
   }
 
   constexpr auto operator--(int) -> iterator
     requires std::ranges::bidirectional_range<parent_base_type>
   {
     auto iter = *this;
-    this->operator--();
+    dec();
     return iter;
   }
 
@@ -185,29 +171,11 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
 
     if constexpr (std::is_signed_v<difference_type>) {
       if (diff < 0) {
-        return *this -= (-diff);
+        return sub(-diff);
       }
     }
 
-    const auto len = std::ranges::distance(begin_, end_);
-    const auto to_end = curr_ == begin_ ? len : std::ranges::distance(curr_, end_);
-    if constexpr (std::is_integral_v<difference_type>) {
-      const auto div = std::div(diff - to_end, len);
-      pos_ += div.quot;
-      diff = div.rem;
-    } else {
-      if (diff > to_end) {
-        diff -= to_end;
-        ++pos_;
-        while (diff >= len) {
-          diff -= len;
-          ++pos_;
-        }
-      }
-    }
-
-    curr_ = begin_ + diff;
-    return *this;
+    return add(diff);
   }
 
   constexpr auto operator-=(difference_type diff) -> iterator&
@@ -219,31 +187,11 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
 
     if constexpr (std::is_signed_v<difference_type>) {
       if (diff < 0) {
-        return *this += (-diff);
+        return add(-diff);
       }
     }
 
-    // rend = reverse end, rbegin = reverse begin
-    const auto len = std::ranges::distance(begin_, end_);
-    const auto rbegin = end_ - 1;
-    const auto to_rend = curr_ == rbegin ? len : std::ranges::distance(begin_, curr_) + 1;
-    if constexpr (std::is_integral_v<difference_type>) {
-      const auto div = std::div(diff - to_rend, len);
-      pos_ -= div.quot;
-      diff = div.rem;
-    } else {
-      if (diff > to_rend) {
-        diff -= to_rend;
-        --pos_;
-        while (diff >= len) {
-          --pos_;
-          diff -= len;
-        }
-      }
-    }
-
-    curr_ = rbegin - diff;
-    return *this;
+    return sub(diff);
   }
 
   [[nodiscard]] constexpr auto operator[](difference_type diff) const -> reference
@@ -353,6 +301,80 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
     } else {
       return begin_ == end_;
     }
+  }
+
+  constexpr auto inc() -> iterator& {
+    ++curr_;
+    if (curr_ == end_) {
+      ++pos_;
+      curr_ = begin_;
+    }
+
+    return *this;
+  }
+
+  constexpr auto dec() -> iterator&
+    requires std::ranges::bidirectional_range<parent_base_type>
+  {
+    if (curr_ == begin_) {
+      curr_ = end_;
+      --pos_;
+    }
+    --curr_;
+
+    return *this;
+  }
+
+  // Precondition: diff > 0
+  constexpr auto add(difference_type diff) -> iterator&
+    requires std::ranges::random_access_range<parent_base_type>
+  {
+    const auto len = std::ranges::distance(begin_, end_);
+    const auto to_end = curr_ == begin_ ? len : std::ranges::distance(curr_, end_);
+    if constexpr (std::is_integral_v<difference_type>) {
+      const auto div = std::div(diff - to_end, len);
+      pos_ += div.quot;
+      diff = div.rem;
+    } else {
+      if (diff > to_end) {
+        diff -= to_end;
+        ++pos_;
+        while (diff >= len) {
+          diff -= len;
+          ++pos_;
+        }
+      }
+    }
+
+    curr_ = begin_ + diff;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return *this;
+  }
+
+  // Precondition: diff > 0
+  constexpr auto sub(difference_type diff) -> iterator&
+    requires std::ranges::random_access_range<parent_base_type>
+  {
+    // rend = reverse end, rbegin = reverse begin
+    const auto len = std::ranges::distance(begin_, end_);
+    const auto rbegin = end_ - 1;
+    const auto to_rend = curr_ == rbegin ? len : std::ranges::distance(begin_, curr_) + 1;
+    if constexpr (std::is_integral_v<difference_type>) {
+      const auto div = std::div(diff - to_rend, len);
+      pos_ -= div.quot;
+      diff = div.rem;
+    } else {
+      if (diff > to_rend) {
+        diff -= to_rend;
+        --pos_;
+        while (diff >= len) {
+          --pos_;
+          diff -= len;
+        }
+      }
+    }
+
+    curr_ = rbegin - diff;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return *this;
   }
 
   base_iterator_type curr_ = {};

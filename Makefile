@@ -82,8 +82,8 @@ help :
 
 init : $(CONAN_CMAKE_PRESETS_FILE) $(ROOT_DIR)/$(COMPILE_COMMANDS)
 
-compile-commands $(ROOT_DIR)/$(COMPILE_COMMANDS) : $(BUILD_DIR_release)/$(COMPILE_COMMANDS)
-	cp $(BUILD_DIR_release)/$(COMPILE_COMMANDS) $(ROOT_DIR)/$(COMPILE_COMMANDS)
+compile-commands $(ROOT_DIR)/$(COMPILE_COMMANDS) : $(BUILD_DIR_$(DEFAULT_BUILD_TYPE))/$(COMPILE_COMMANDS)
+	cp $(BUILD_DIR_$(DEFAULT_BUILD_TYPE))/$(COMPILE_COMMANDS) $(ROOT_DIR)/$(COMPILE_COMMANDS)
 
 define INSTALL_DEPS_RULE
 $(BUILD_DIR_$(1))/$(CONAN_INSTALL_PRODUCT) : $(CONANFILE)
@@ -146,7 +146,7 @@ $(foreach _build_target, $(BUILD_TARGETS), \
 	$(eval $(call LAUNCH_TARGET_DEFAULT_RULE,$(_build_target))))
 
 define TEST_RULE
-test-$(1) : $(CONAN_CMAKE_PRESETS_FILE) $(foreach _build_target, $(TEST_TARGETS), $(BUILD_DIR_$(1))/$(_build_target)/$(_build_target))
+test-$(1) : $(CONAN_CMAKE_PRESETS_FILE) $(foreach _build_target, $(TEST_TARGETS), $(BUILD_DIR_$(1))/$(TARGET_SUBDIR_$(_build_target))/$(_build_target))
 	ctest --preset $(CMAKE_TEST_PRESET_$(1)) --output-on-failure
 endef
 $(foreach _build_type, $(BUILD_TYPES), \
@@ -155,7 +155,7 @@ $(foreach _build_type, $(BUILD_TYPES), \
 test : test-$(DEFAULT_BUILD_TYPE)
 
 define TEST_FAST_RULE
-test-fast-$(1) : $(CONAN_CMAKE_PRESETS_FILE) $(BUILD_DIR_$(1))/$(TEST_FAST_TARGET)/$(TEST_FAST_TARGET)
+test-fast-$(1) : $(CONAN_CMAKE_PRESETS_FILE) $(BUILD_DIR_$(1))/$(TARGET_SUBDIR_$(TEST_FAST_TARGET))/$(TEST_FAST_TARGET)
 	ctest --preset $(CMAKE_TEST_PRESET_$(1)) -R ''^$(TEST_FAST_TARGET)$$' --output-on-failure
 endef
 $(foreach _build_type, $(BUILD_TYPES), \

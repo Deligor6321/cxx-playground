@@ -3,6 +3,7 @@
 #pragma once
 
 #include <bit>
+#include <concepts>
 #include <cstdint>
 #include <type_traits>
 
@@ -34,8 +35,12 @@ template <class EnumType>
 using enum_flags_data_t = std::make_unsigned_t<std::underlying_type_t<EnumType>>;
 
 template <class EnumType, enum_flags_data_t<EnumType> EffectiveMask>
-  requires std::is_enum_v<EnumType>
+  requires std::is_enum_v<EnumType> && std::unsigned_integral<enum_flags_data_t<EnumType>>
 class enum_flags_impl;
+
+template <std::unsigned_integral UInteger, UInteger... UnsignedIntegralValues>
+// NOLINTNEXTLINE(hicpp-signed-bitwise): clang-tidy false positive
+constexpr UInteger bitwise_or = (UInteger{} | ... | UnsignedIntegralValues);
 
 template <class EnumType, EnumType... EnumValues>
   requires std::is_enum_v<EnumType>
@@ -44,9 +49,9 @@ struct make_enum_flags_mask_spec {
   using enum_flags_data_type = detail::enum_flags_data_t<EnumType>;
 
  public:
-  using type = enum_flags_mask_spec_t<enum_flags_data_type,
-                                      (enum_flags_data_type{} | ...
-                                       | std::bit_cast<enum_flags_data_type>(EnumValues))>;
+  using type = enum_flags_mask_spec_t<
+      enum_flags_data_type,
+      detail::bitwise_or<enum_flags_data_type, std::bit_cast<enum_flags_data_type>(EnumValues)...>>;
 };
 
 }  // namespace detail
@@ -355,7 +360,7 @@ enum_flags(EnumType, enum_flags_mask_spec_t<detail::enum_flags_data_t<EnumType>,
 
 namespace detail {
 template <class EnumType, enum_flags_data_t<EnumType> EffectiveMask>
-  requires std::is_enum_v<EnumType>
+  requires std::is_enum_v<EnumType> && std::unsigned_integral<enum_flags_data_t<EnumType>>
 class enum_flags_impl {
  public:
   // -- Member types
@@ -440,6 +445,7 @@ class enum_flags_impl {
   }
 
   constexpr auto flip_all() noexcept -> enum_flags_impl& {
+    // NOLINTNEXTLINE(hicpp-signed-bitwise): clang-tidy false positive
     flags_data_ = (~flags_data_ & enum_flags_impl::effective_mask);
     return *this;
   }
