@@ -36,16 +36,24 @@ template <std::ranges::forward_range RangeType,
 class ring_view
     : public std::ranges::view_interface<ring_view<RangeType, BoundForthType, BoundBackType>> {
  public:
+  // -- Nested types
+  template <bool Const>
+  class iterator;
+  class sentinel;
+
   // -- Member types
   using base_type = RangeType;
   using bound_forth_type = BoundForthType;
   using bound_back_type = BoundBackType;
+  using iterator_type = iterator<false>;
+  using const_iterator_type = iterator<true>;
 
-  // -- Iterator and sentinel
+  // -- Sentinel
 
-  class iterator;
   class sentinel {
     friend class ring_view;
+
+    template <bool Const>
     friend class iterator;
 
    public:
@@ -72,10 +80,16 @@ class ring_view
 
   // -- Range operation
 
-  [[nodiscard]] constexpr auto begin() -> iterator {
+  [[nodiscard]] constexpr auto begin() -> iterator_type {
     auto base_begin = std::ranges::begin(base_);
     auto base_end = std::ranges::end(base_);
-    return iterator{base_begin, base_begin, base_end};
+    return {base_begin, base_begin, base_end};
+  }
+
+  [[nodiscard]] constexpr auto begin() const -> const_iterator_type {
+    auto base_begin = std::ranges::begin(base_);
+    auto base_end = std::ranges::end(base_);
+    return {base_begin, base_begin, base_end};
   }
 
   [[nodiscard]] constexpr auto end() const noexcept -> sentinel { return sentinel_; }
@@ -106,12 +120,20 @@ constexpr auto uabs(std::signed_integral auto value) noexcept {
 
 template <std::ranges::forward_range RangeType, ring_view_bound BoundForthType,
           ring_view_bound BoundBackType>
+template <bool Const>
 class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
-  using parent_type = ring_view<RangeType, BoundForthType, BoundBackType>;
+  using parent_type =
+      std::conditional_t<Const,
+                         std::add_const_t<ring_view<RangeType, BoundForthType, BoundBackType>>,
+                         ring_view<RangeType, BoundForthType, BoundBackType>>;
   friend class ring_view<RangeType, BoundForthType, BoundBackType>;
 
-  using parent_base_type = parent_type::base_type;
-  using sentinel = parent_type::sentinel;
+  using parent_base_type =
+      std::conditional_t<Const, std::add_const_t<typename parent_type::base_type>,
+                         typename parent_type::base_type>;
+  using sentinel = typename parent_type::sentinel;
+  using bound_forth_type = typename parent_type::bound_forth_type;
+  using bound_back_type = typename parent_type::bound_back_type;
 
   using position_type = std::make_signed_t<ring_view_bound_t>;
 
@@ -203,12 +225,12 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
   // -- Sentinel equality comparison
 
   [[nodiscard]] constexpr auto operator==(const sentinel& sen) const -> bool {
-    if constexpr (std::integral<parent_type::bound_forth_type>) {
+    if constexpr (std::integral<bound_forth_type>) {
       if (pos_ >= 0 && detail::uabs(pos_) >= sen.bound_forth_) {
         return true;
       }
     }
-    if constexpr (std::integral<parent_type::bound_back_type>) {
+    if constexpr (std::integral<bound_back_type>) {
       if (pos_ < 0 && detail::uabs(pos_) > sen.bound_back_) {
         return true;
       }
@@ -325,7 +347,7 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
     return *this;
   }
 
-  // Precondition: diff > 0
+  // Precondition: diff >= 0
   constexpr auto add(difference_type diff) -> iterator&
     requires std::ranges::random_access_range<parent_base_type>
   {
@@ -350,7 +372,7 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
     return *this;
   }
 
-  // Precondition: diff > 0
+  // Precondition: diff >= 0
   constexpr auto sub(difference_type diff) -> iterator&
     requires std::ranges::random_access_range<parent_base_type>
   {
@@ -462,6 +484,6 @@ ring(ranges::ring_view_unreachable_bound_t, BoundBackType)
 
 }  // namespace views
 
-// TODO(improve): reverse, output, borrow, non-common range?, noexcept
+// TODO(improve): reverse, borrow, non-common range?, noexcept
 
 }  // namespace dlgr
