@@ -31,10 +31,8 @@ constexpr inline ring_view_unreachable_bound_t ring_view_unreachable_bound = {};
 // == ring_view implementation
 
 template <std::ranges::forward_range RangeType,
-          ring_view_bound BoundForthType = ring_view_unreachable_bound_t,
-          ring_view_bound BoundBackType = ring_view_bound_t>
-class ring_view
-    : public std::ranges::view_interface<ring_view<RangeType, BoundForthType, BoundBackType>> {
+          ring_view_bound BoundType = ring_view_unreachable_bound_t>
+class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundType>> {
  public:
   // -- Nested types
   template <bool Const>
@@ -43,8 +41,7 @@ class ring_view
 
   // -- Member types
   using base_type = RangeType;
-  using bound_forth_type = BoundForthType;
-  using bound_back_type = BoundBackType;
+  using bound_type = BoundType;
   using iterator_type = iterator<false>;
   using const_iterator_type = iterator<true>;
 
@@ -60,12 +57,9 @@ class ring_view
     [[nodiscard]] constexpr sentinel() noexcept = default;
 
    private:
-    [[nodiscard]] constexpr sentinel(bound_forth_type bound_forth,
-                                     bound_back_type bound_back) noexcept
-        : bound_forth_(bound_forth), bound_back_(bound_back) {}
+    [[nodiscard]] constexpr explicit sentinel(bound_type bound) noexcept : bound_(bound) {}
 
-    bound_forth_type bound_forth_ = {};
-    bound_back_type bound_back_ = {};
+    bound_type bound_ = {};
   };
 
   // -- Constructors
@@ -74,9 +68,8 @@ class ring_view
     requires std::default_initializable<base_type>
   = default;
 
-  [[nodiscard]] constexpr explicit ring_view(base_type base, bound_forth_type bound_forth = {},
-                                             bound_back_type bound_back = {})
-      : base_(std::move(base)), sentinel_{bound_forth, bound_back} {}
+  [[nodiscard]] constexpr explicit ring_view(base_type base, bound_type bound = {})
+      : base_(std::move(base)), sentinel_{bound} {}
 
   // -- Range operation
 
@@ -108,32 +101,20 @@ class ring_view
   sentinel sentinel_;
 };
 
-namespace detail {
-
-constexpr auto uabs(std::signed_integral auto value) noexcept {
-  return static_cast<std::make_unsigned_t<decltype(value)>>(std::abs(value));
-}
-
-}  // namespace detail
-
 // == ring_view::iterator implementation
 
-template <std::ranges::forward_range RangeType, ring_view_bound BoundForthType,
-          ring_view_bound BoundBackType>
+template <std::ranges::forward_range RangeType, ring_view_bound BoundType>
 template <bool Const>
-class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
-  using parent_type =
-      std::conditional_t<Const,
-                         std::add_const_t<ring_view<RangeType, BoundForthType, BoundBackType>>,
-                         ring_view<RangeType, BoundForthType, BoundBackType>>;
-  friend class ring_view<RangeType, BoundForthType, BoundBackType>;
+class ring_view<RangeType, BoundType>::iterator {
+  using parent_type = std::conditional_t<Const, std::add_const_t<ring_view<RangeType, BoundType>>,
+                                         ring_view<RangeType, BoundType>>;
+  friend class ring_view<RangeType, BoundType>;
 
   using parent_base_type =
       std::conditional_t<Const, std::add_const_t<typename parent_type::base_type>,
                          typename parent_type::base_type>;
   using sentinel = typename parent_type::sentinel;
-  using bound_forth_type = typename parent_type::bound_forth_type;
-  using bound_back_type = typename parent_type::bound_back_type;
+  using bound_type = typename parent_type::bound_type;
 
   using position_type = std::make_signed_t<ring_view_bound_t>;
 
@@ -225,17 +206,17 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
   // -- Sentinel equality comparison
 
   [[nodiscard]] constexpr auto operator==(const sentinel& sen) const -> bool {
-    if constexpr (std::integral<bound_forth_type>) {
-      if (pos_ >= 0 && detail::uabs(pos_) >= sen.bound_forth_) {
-        return true;
-      }
+    if (curr_ == end_) {
+      return true;
     }
-    if constexpr (std::integral<bound_back_type>) {
-      if (pos_ < 0 && detail::uabs(pos_) > sen.bound_back_) {
-        return true;
+    if constexpr (std::integral<bound_type>) {
+      if (pos_ >= 0) {
+        return static_cast<bound_type>(pos_) >= sen.bound_;
       }
+      return true;
+    } else {
+      return false;
     }
-    return curr_ == end_;
   }
 
   [[nodiscard]] constexpr friend auto operator==(const sentinel& sen, const iterator& iter)
@@ -285,37 +266,37 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
   [[nodiscard]] constexpr friend auto operator==(const iterator& lhs, const iterator& rhs) -> bool
     requires std::equality_comparable<base_iterator_type>
   {
-    return lhs.curr_ == rhs.curr_;
+    return lhs.pos_ == rhs.pos_ && lhs.curr_ == rhs.curr_;
   }
 
   [[nodiscard]] constexpr friend auto operator<(const iterator& lhs, const iterator& rhs) -> bool
     requires std::totally_ordered<base_iterator_type>
   {
-    return lhs.curr_ < rhs.curr_;
+    return lhs.pos_ < rhs.pos_ || (lhs.pos_ == rhs.pos_ && lhs.curr_ < rhs.curr_);
   }
 
   [[nodiscard]] constexpr friend auto operator>(const iterator& lhs, const iterator& rhs) -> bool
     requires std::totally_ordered<base_iterator_type>
   {
-    return lhs.curr_ < rhs.curr_;
+    return lhs.pos_ > rhs.pos_ || (lhs.pos_ == rhs.pos_ && lhs.curr_ > rhs.curr_);
   }
 
   [[nodiscard]] constexpr friend auto operator<=(const iterator& lhs, const iterator& rhs) -> bool
     requires std::totally_ordered<base_iterator_type>
   {
-    return lhs.curr_ <= rhs.curr_;
+    return lhs.pos_ < rhs.pos_ || (lhs.pos_ == rhs.pos_ && lhs.curr_ <= rhs.curr_);
   }
 
   [[nodiscard]] constexpr friend auto operator>=(const iterator& lhs, const iterator& rhs) -> bool
     requires std::totally_ordered<base_iterator_type>
   {
-    return lhs.curr_ <= rhs.curr_;
+    return lhs.pos_ > rhs.pos_ || (lhs.pos_ == rhs.pos_ && lhs.curr_ >= rhs.curr_);
   }
 
  private:
   [[nodiscard]] constexpr iterator(base_iterator_type curr, base_iterator_type begin,
-                                   base_iterator_type end)
-      : curr_{std::move(curr)}, begin_{std::move(begin)}, end_{std::move(end)} {}
+                                   base_iterator_type end, position_type pos = {})
+      : curr_{std::move(curr)}, begin_{std::move(begin)}, end_{std::move(end)}, pos_{pos} {}
 
   [[nodiscard]] constexpr auto empty() const -> bool {
     if constexpr (std::totally_ordered<base_iterator_type>) {
@@ -354,9 +335,10 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
     const auto len = std::ranges::distance(begin_, end_);
     const auto to_end = curr_ == begin_ ? len : std::ranges::distance(curr_, end_);
     if constexpr (std::is_integral_v<difference_type>) {
-      const auto div = std::div(diff - to_end, len);
-      pos_ += div.quot;
-      diff = div.rem;
+      using std::div;  // enable ADL
+      const auto div_mod = div(diff - to_end, len);
+      pos_ += div_mod.quot;
+      diff = div_mod.rem;
     } else {
       if (diff > to_end) {
         diff -= to_end;
@@ -381,9 +363,10 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
     const auto rbegin = end_ - 1;
     const auto to_rend = curr_ == rbegin ? len : std::ranges::distance(begin_, curr_) + 1;
     if constexpr (std::is_integral_v<difference_type>) {
-      const auto div = std::div(diff - to_rend, len);
-      pos_ -= div.quot;
-      diff = div.rem;
+      using std::div;  // enable ADL
+      const auto div_mod = div(diff - to_rend, len);
+      pos_ -= div_mod.quot;
+      diff = div_mod.rem;
     } else {
       if (diff > to_rend) {
         diff -= to_rend;
@@ -407,27 +390,8 @@ class ring_view<RangeType, BoundForthType, BoundBackType>::iterator {
 
 // == ring_view deduction guides
 
-template <std::ranges::forward_range RangeType, std::integral BoundForthType,
-          std::integral BoundBackType>
-ring_view(RangeType&&, BoundForthType, BoundBackType)
-    -> ring_view<std::views::all_t<RangeType>, ring_view_bound_t, ring_view_bound_t>;
-
-template <std::ranges::forward_range RangeType, std::integral BoundForthType>
-ring_view(RangeType&&, BoundForthType, ring_view_unreachable_bound_t)
-    -> ring_view<std::views::all_t<RangeType>, ring_view_bound_t, ring_view_unreachable_bound_t>;
-
-template <std::ranges::forward_range RangeType, std::integral BoundBackType>
-ring_view(RangeType&&, ring_view_unreachable_bound_t, BoundBackType)
-    -> ring_view<std::views::all_t<RangeType>, ring_view_unreachable_bound_t, ring_view_bound_t>;
-
-template <std::ranges::forward_range RangeType>
-ring_view(RangeType&&, ring_view_unreachable_bound_t, ring_view_unreachable_bound_t)
-    -> ring_view<std::views::all_t<RangeType>, ring_view_unreachable_bound_t,
-                 ring_view_unreachable_bound_t>;
-
-template <std::ranges::forward_range RangeType, std::integral BoundForthType>
-ring_view(RangeType&&, BoundForthType)
-    -> ring_view<std::views::all_t<RangeType>, ring_view_bound_t>;
+template <std::ranges::forward_range RangeType, std::integral BoundType>
+ring_view(RangeType&&, BoundType) -> ring_view<std::views::all_t<RangeType>, ring_view_bound_t>;
 
 template <std::ranges::forward_range RangeType>
 ring_view(RangeType&&, ring_view_unreachable_bound_t)
@@ -442,45 +406,31 @@ namespace views {
 
 // == ring implementation
 
-template <ranges::ring_view_bound BoundForthType = ranges::ring_view_unreachable_bound_t,
-          ranges::ring_view_bound BoundBackType = ranges::ring_view_bound_t>
+template <ranges::ring_view_bound BoundType = ranges::ring_view_unreachable_bound_t>
 class ring {
  public:
-  using bound_forth_type = BoundForthType;
-  using bound_back_type = BoundBackType;
+  using bound_type = BoundType;
 
-  [[nodiscard]] constexpr explicit ring(bound_forth_type bound_forth = {},
-                                        bound_back_type bound_back = {}) noexcept
-      : bound_forth_(bound_forth), bound_back_(bound_back) {}
+  [[nodiscard]] constexpr explicit ring(bound_type bound = {}) noexcept : bound_(bound) {}
 
   template <std::ranges::forward_range RangeType>
   [[nodiscard]] constexpr auto operator()(RangeType&& range) const {
-    return ranges::ring_view(std::forward<RangeType>(range), bound_forth_, bound_back_);
+    return ranges::ring_view(std::forward<RangeType>(range), bound_);
   }
 
  private:
-  bound_forth_type bound_forth_ = {};
-  bound_back_type bound_back_ = {};
+  bound_type bound_ = {};
 };
 
-template <std::ranges::forward_range RangeType, ranges::ring_view_bound BoundForthType,
-          ranges::ring_view_bound BoundBackType>
-constexpr auto operator|(RangeType&& range, const ring<BoundForthType, BoundBackType>& ring) {
+template <std::ranges::forward_range RangeType, ranges::ring_view_bound BoundType>
+constexpr auto operator|(RangeType&& range, const ring<BoundType>& ring) {
   return ring(std::forward<RangeType>(range));
 }
 
 // == ring deduction guides
 
-template <std::integral BoundForthType>
-ring(BoundForthType) -> ring<ranges::ring_view_bound_t>;
-
-template <std::integral BoundForthType>
-ring(BoundForthType, ranges::ring_view_unreachable_bound_t)
-    -> ring<ranges::ring_view_bound_t, ranges::ring_view_unreachable_bound_t>;
-
-template <std::integral BoundBackType>
-ring(ranges::ring_view_unreachable_bound_t, BoundBackType)
-    -> ring<ranges::ring_view_unreachable_bound_t, ranges::ring_view_bound_t>;
+template <std::integral BoundType>
+ring(BoundType) -> ring<ranges::ring_view_bound_t>;
 
 }  // namespace views
 
