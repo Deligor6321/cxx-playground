@@ -14,6 +14,7 @@ class CxxPlaygroundRecipe(ConanFile):
     def requirements(self):
         self.requires("benchmark/1.8.3")
         self.requires("catch2/3.4.0")
+        self.requires("ms-gsl/4.0.0")
 
     def generate(self):
         cmake_deps = CMakeDeps(self)

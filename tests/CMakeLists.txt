@@ -21,7 +21,7 @@ foreach(san IN LISTS SANITIZERS)
   add_executable(${TARGET})
 
   target_sources(${TARGET} PRIVATE ${TESTS_SRC})
-  target_link_libraries(${TARGET} PRIVATE Catch2::Catch2WithMain)
+  target_link_libraries(${TARGET} PRIVATE dlgr Catch2::Catch2WithMain)
 
   target_compile_options(${TARGET} PRIVATE ${SAN_FLAGS})
   target_link_libraries(${TARGET} PRIVATE ${SAN_FLAGS})
@@ -33,7 +33,7 @@ if(NOT (SANITIZERS))
   add_executable(utests)
 
   target_sources(utests PRIVATE ${TESTS_SRC})
-  target_link_libraries(utests PRIVATE Catch2::Catch2WithMain)
+  target_link_libraries(utests PRIVATE dlgr Catch2::Catch2WithMain)
 
   add_test(NAME utests COMMAND utests)
 endif()
