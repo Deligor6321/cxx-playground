@@ -167,11 +167,11 @@ iwyu : $(ROOT_DIR)/$(COMPILE_COMMANDS)
 	iwyu_tool.py -p $(ROOT_DIR) -- -Xiwyu --mapping_file=$(ROOT_DIR)/tools/iwyu/libcxx.imp
 
 cppcheck : $(ROOT_DIR)/$(COMPILE_COMMANDS)
-	cppcheck -v --error-exitcode=1 --check-level=exhaustive \
+	cppcheck -v --error-exitcode=1 \
 		--cppcheck-build-dir=$(ROOT_DIR) --project=$(ROOT_DIR)/$(COMPILE_COMMANDS) \
-		--enable=all --addon=threadsafety \
+		--enable=all --addon=threadsafety --addon=findcasts --addon=misc \
 		--suppress=unmatchedSuppression --suppress=missingIncludeSystem --suppress=unusedFunction \
-		--inline-suppr --suppressions-list=cppcheck-suppressions.txt
+		--inline-suppr --suppressions-list=$(ROOT_DIR)/cppcheck-suppressions.txt
 
 clang-format :
 	clang-format -n --Werror $(SRC_FILES)

@@ -1,6 +1,12 @@
 # Build directory
 /build
 
+# cppcheck
+*.snalyzerinfo
+*.ctu-info
+*.a1
+files.txt
+
 # Generated configs
 compile_commands.json
 CMakeUserPresets.json
