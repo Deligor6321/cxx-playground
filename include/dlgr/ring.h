@@ -5,9 +5,13 @@
 #include <concepts>
 #include <cstdlib>
 #include <iterator>
+#include <limits>
 #include <ranges>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
+
+#include <gsl/assert>
 
 namespace dlgr {
 
@@ -58,7 +62,9 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
   = default;
 
   [[nodiscard]] constexpr explicit ring_view(base_type base, bound_type bound = {})
-      : base_(std::move(base)), bound_{bound} {}
+      : base_(std::move(base)), bound_{bound} {
+    validate();
+  }
 
   // -- Range operation
 
@@ -125,9 +131,27 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
   [[nodiscard]] constexpr auto base() && -> base_type { return std::move(base_); }
 
  private:
+  // -- Helper functions
+
+  constexpr auto validate() const
+      noexcept(is_unbounded || !std::ranges::random_access_range<base_type>) {
+    if constexpr (!is_unbounded && std::ranges::random_access_range<base_type>) {
+      auto size = std::ranges::size(base_);
+      if (size != 0
+          && bound_ > static_cast<bound_type>(std::numeric_limits<decltype(size)>::max() / size)) {
+        // cppcheck-suppress[throwInNoexceptFunction]: Conditional noexcept is ok
+        throw std::overflow_error("bound overflow");
+      }
+    }
+  }
+
+  // -- Data members
+
   base_type base_;
   bound_type bound_ = {};
 };
+
+// == Utility funtions implementation details of
 
 namespace detail {
 
@@ -162,13 +186,11 @@ class ring_view<RangeType, BoundType>::iterator {
   using value_type = std::iter_value_t<base_iterator_type>;
   using reference = std::iter_reference_t<base_iterator_type>;
   using pointer = typename std::iterator_traits<base_iterator_type>::pointer;
-  using iterator_category = detail::min_iterator_category_t<
-      typename std::iterator_traits<base_iterator_type>::iterator_category,
-      std::conditional_t<is_unbounded, std::bidirectional_iterator_tag,
-                         std::random_access_iterator_tag>>;
-
-  // Needed for arithmetics
-  static_assert(std::signed_integral<difference_type>);
+  using iterator_category =
+      std::conditional_t<is_unbounded, std::input_iterator_tag,
+                         detail::min_iterator_category_t<
+                             typename std::iterator_traits<base_iterator_type>::iterator_category,
+                             std::random_access_iterator_tag>>;
 
   // -- Constructors
 
@@ -176,7 +198,10 @@ class ring_view<RangeType, BoundType>::iterator {
 
   // -- Data access
 
-  [[nodiscard]] constexpr auto operator*() const -> reference { return *curr_; }
+  [[nodiscard]] constexpr auto operator*() const -> reference {
+    Expects(curr_ != end_);
+    return *curr_;
+  }
 
   // -- Operations
 
@@ -202,36 +227,21 @@ class ring_view<RangeType, BoundType>::iterator {
     return iter;
   }
 
-  constexpr auto operator+=(difference_type diff) -> iterator&
-    requires std::ranges::random_access_range<parent_base_type>
-  {
-    if (empty()) {
-      return *this;
-    }
-
-    if (diff < 0) {
-      return sub(-diff);
-    }
-
-    return add(diff);
+  constexpr auto operator+=(difference_type diff) -> iterator& requires(
+      std::ranges::random_access_range<parent_base_type>&& std::signed_integral<difference_type>) {
+    return diff < 0 ? sub(-diff) : add(diff);
   }
 
-  constexpr auto operator-=(difference_type diff) -> iterator&
-    requires std::ranges::random_access_range<parent_base_type>
-  {
-    if (empty()) {
-      return *this;
-    }
-
-    if (diff < 0) {
-      return add(-diff);
-    }
-
-    return sub(diff);
+  constexpr auto
+  operator-=(difference_type diff) -> iterator& requires(
+      std::ranges::random_access_range<parent_base_type>&& std::signed_integral<difference_type>) {
+    return diff < 0 ? add(-diff) : sub(diff);
   }
 
-  [[nodiscard]] constexpr auto operator[](difference_type diff) const -> reference
-    requires std::ranges::random_access_range<parent_base_type>
+  [[nodiscard]] constexpr auto
+  operator[](difference_type diff) const -> reference
+    requires(std::ranges::random_access_range<parent_base_type>
+             && std::signed_integral<difference_type>)
   {
     return *(*this + diff);
   }
@@ -267,28 +277,32 @@ class ring_view<RangeType, BoundType>::iterator {
   // -- Non-member operations
 
   [[nodiscard]] constexpr friend auto operator+(iterator iter, difference_type diff) -> iterator
-    requires std::ranges::random_access_range<parent_base_type>
+    requires(std::ranges::random_access_range<parent_base_type>
+             && std::signed_integral<difference_type>)
   {
     iter += diff;
     return iter;
   }
 
   [[nodiscard]] constexpr friend auto operator+(difference_type diff, iterator iter) -> iterator
-    requires std::ranges::random_access_range<parent_base_type>
+    requires(std::ranges::random_access_range<parent_base_type>
+             && std::signed_integral<difference_type>)
   {
     iter += diff;
     return iter;
   }
 
   [[nodiscard]] constexpr friend auto operator-(iterator iter, difference_type diff) -> iterator
-    requires std::ranges::random_access_range<parent_base_type>
+    requires(std::ranges::random_access_range<parent_base_type>
+             && std::signed_integral<difference_type>)
   {
     iter -= diff;
     return iter;
   }
 
   [[nodiscard]] constexpr friend auto operator-(difference_type diff, iterator iter) -> iterator
-    requires std::ranges::random_access_range<parent_base_type>
+    requires(std::ranges::random_access_range<parent_base_type>
+             && std::signed_integral<difference_type>)
   {
     iter -= diff;
     return iter;
@@ -296,34 +310,20 @@ class ring_view<RangeType, BoundType>::iterator {
 
   [[nodiscard]] constexpr friend auto operator-(const iterator& lhs, const iterator& rhs)
       -> difference_type
-    requires(!is_unbounded && std::ranges::random_access_range<parent_base_type>)
+    requires(!is_unbounded && std::ranges::random_access_range<parent_base_type>
+             && std::signed_integral<difference_type>)
   {
-    // precondition
-    assert(lhs.begin_ == rhs.begin_ && "Cannot compare ring iterators observing different ranges");
-    assert(lhs.end_ == rhs.end_ && "Cannot compare ring iterators observing different ranges");
+    expects_same_range(lhs, rhs);
 
-    const auto len = std::ranges::distance(lhs.begin_, lhs.end_);
-    const auto pos_diff = lhs.pos_ > rhs.pos_
-                              ? len * static_cast<difference_type>(lhs.pos_ - rhs.pos_)
-                              : -len * static_cast<difference_type>(rhs.pos_ - lhs.pos_);
-    return pos_diff + lhs.curr_ - rhs.curr_;
+    return lhs.pos_ >= rhs.pos_ ? dist_from_to(lhs, rhs) : -dist_from_to(rhs, lhs);
   }
 
   // -- Comparison
 
-  [[nodiscard]] constexpr friend auto operator==([[maybe_unused]] const iterator& lhs,
-                                                 [[maybe_unused]] const iterator& rhs) -> bool
-    requires(is_unbounded)
-  {
-    return false;
-  }
-
   [[nodiscard]] constexpr friend auto operator==(const iterator& lhs, const iterator& rhs) -> bool
     requires(!is_unbounded && std::equality_comparable<base_iterator_type>)
   {
-    // precondition
-    assert(lhs.begin_ == rhs.begin_ && "Cannot compare ring iterators observing different ranges");
-    assert(lhs.end_ == rhs.end_ && "Cannot compare ring iterators observing different ranges");
+    expects_same_range(lhs, rhs);
 
     return lhs.pos_ == rhs.pos_ && lhs.curr_ == rhs.curr_;
   }
@@ -331,9 +331,7 @@ class ring_view<RangeType, BoundType>::iterator {
   [[nodiscard]] constexpr friend auto operator<(const iterator& lhs, const iterator& rhs) -> bool
     requires(!is_unbounded && std::totally_ordered<base_iterator_type>)
   {
-    // precondition
-    assert(lhs.begin_ == rhs.begin_ && "Cannot compare ring iterators observing different ranges");
-    assert(lhs.end_ == rhs.end_ && "Cannot compare ring iterators observing different ranges");
+    expects_same_range(lhs, rhs);
 
     return lhs.pos_ < rhs.pos_ || (lhs.pos_ == rhs.pos_ && lhs.curr_ < rhs.curr_);
   }
@@ -341,9 +339,7 @@ class ring_view<RangeType, BoundType>::iterator {
   [[nodiscard]] constexpr friend auto operator>(const iterator& lhs, const iterator& rhs) -> bool
     requires(!is_unbounded && std::totally_ordered<base_iterator_type>)
   {
-    // precondition
-    assert(lhs.begin_ == rhs.begin_ && "Cannot compare ring iterators observing different ranges");
-    assert(lhs.end_ == rhs.end_ && "Cannot compare ring iterators observing different ranges");
+    expects_same_range(lhs, rhs);
 
     return lhs.pos_ > rhs.pos_ || (lhs.pos_ == rhs.pos_ && lhs.curr_ > rhs.curr_);
   }
@@ -351,9 +347,7 @@ class ring_view<RangeType, BoundType>::iterator {
   [[nodiscard]] constexpr friend auto operator<=(const iterator& lhs, const iterator& rhs) -> bool
     requires(!is_unbounded && std::totally_ordered<base_iterator_type>)
   {
-    // precondition
-    assert(lhs.begin_ == rhs.begin_ && "Cannot compare ring iterators observing different ranges");
-    assert(lhs.end_ == rhs.end_ && "Cannot compare ring iterators observing different ranges");
+    expects_same_range(lhs, rhs);
 
     return lhs.pos_ < rhs.pos_ || (lhs.pos_ == rhs.pos_ && lhs.curr_ <= rhs.curr_);
   }
@@ -361,17 +355,19 @@ class ring_view<RangeType, BoundType>::iterator {
   [[nodiscard]] constexpr friend auto operator>=(const iterator& lhs, const iterator& rhs) -> bool
     requires(!is_unbounded && std::totally_ordered<base_iterator_type>)
   {
-    // precondition
-    assert(lhs.begin_ == rhs.begin_ && "Cannot compare ring iterators observing different ranges");
-    assert(lhs.end_ == rhs.end_ && "Cannot compare ring iterators observing different ranges");
+    expects_same_range(lhs, rhs);
 
     return lhs.pos_ > rhs.pos_ || (lhs.pos_ == rhs.pos_ && lhs.curr_ >= rhs.curr_);
   }
 
  private:
+  // -- Constructor
+
   [[nodiscard]] constexpr iterator(base_iterator_type curr, base_iterator_type begin,
                                    base_iterator_type end, bound_type pos = {})
       : curr_{std::move(curr)}, begin_{std::move(begin)}, end_{std::move(end)}, pos_{pos} {}
+
+  // -- Helper functions
 
   [[nodiscard]] constexpr auto empty() const -> bool {
     if constexpr (std::totally_ordered<base_iterator_type>) {
@@ -385,6 +381,7 @@ class ring_view<RangeType, BoundType>::iterator {
     ++curr_;
     if (curr_ == end_) {
       if constexpr (!is_unbounded) {
+        Expects(pos_ <= std::numeric_limits<bound_type>::max() - 1);
         ++pos_;
       }
       curr_ = begin_;
@@ -399,6 +396,7 @@ class ring_view<RangeType, BoundType>::iterator {
     if (curr_ == begin_) {
       curr_ = end_;
       if constexpr (!is_unbounded) {
+        Expects(pos_ >= std::numeric_limits<bound_type>::min() + 1);
         --pos_;
       }
     }
@@ -407,22 +405,24 @@ class ring_view<RangeType, BoundType>::iterator {
     return *this;
   }
 
-  constexpr auto add(difference_type diff) -> iterator&
-    requires std::ranges::random_access_range<parent_base_type>
-  {
-    // precondition
-    assert(diff >= 0 && "diff must be positive");
-    assert(begin_ < end_ && "range must not be empty");
+  constexpr auto add(difference_type diff) -> iterator& requires(
+      std::ranges::random_access_range<parent_base_type>&& std::signed_integral<difference_type>) {
+    GSL_ASSUME(diff >= 0);
+
+    if (empty()) {
+      return *this;
+    }
 
     const auto len = std::ranges::distance(begin_, end_);
     const auto to_end = curr_ == begin_ ? len : std::ranges::distance(curr_, end_);
     {
       const auto div_mod = std::div(diff - to_end, len);
       if constexpr (!is_unbounded) {
-        assert(div_mod.quot >= 0);
+        GSL_ASSUME(div_mod.quot >= 0);
+        Expects(pos_ <= std::numeric_limits<bound_type>::max() - div_mod.quot);
         pos_ += static_cast<bound_type>(div_mod.quot);
       }
-      assert(div_mod.rem >= 0);
+      GSL_ASSUME(div_mod.rem >= 0);
       diff = div_mod.rem;
     }
 
@@ -430,12 +430,13 @@ class ring_view<RangeType, BoundType>::iterator {
     return *this;
   }
 
-  constexpr auto sub(difference_type diff) -> iterator&
-    requires std::ranges::random_access_range<parent_base_type>
-  {
-    // precondition
-    assert(diff >= 0 && "diff must be positive");
-    assert(begin_ < end_ && "range must not be empty");
+  constexpr auto sub(difference_type diff) -> iterator& requires(
+      std::ranges::random_access_range<parent_base_type>&& std::signed_integral<difference_type>) {
+    GSL_ASSUME(diff >= 0);
+
+    if (empty()) {
+      return *this;
+    }
 
     // rend = reverse end, rbegin = reverse begin
     const auto len = std::ranges::distance(begin_, end_);
@@ -444,15 +445,52 @@ class ring_view<RangeType, BoundType>::iterator {
     {
       const auto div_mod = std::div(diff - to_rend, len);
       if constexpr (!is_unbounded) {
-        assert(div_mod.quot >= 0);
+        GSL_ASSUME(div_mod.quot >= 0);
+        Expects(pos_ <= std::numeric_limits<bound_type>::max() - div_mod.quot);
         pos_ -= static_cast<bound_type>(div_mod.quot);
       }
-      assert(div_mod.rem >= 0);
+      GSL_ASSUME(div_mod.rem >= 0);
       diff = div_mod.rem;
     }
 
     curr_ = rbegin - diff;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return *this;
+  }
+
+  [[nodiscard]] constexpr friend auto dist_from_to(const iterator& from_it, const iterator& to_it)
+      -> difference_type
+    requires(!is_unbounded && std::ranges::random_access_range<parent_base_type>
+             && std::signed_integral<difference_type>)
+  {
+    GSL_ASSUME(from_it.pos_ >= to_it.pos_);
+    GSL_ASSUME(from_it.begin_ == to_it.begin_);
+    GSL_ASSUME(from_it.end_ == to_it.end_);
+
+    const auto len = std::ranges::distance(from_it.begin_, to_it.end_);
+    if (len == 0) {
+      return 0;
+    }
+
+    const auto pos_diff = from_it.pos_ - to_it.pos_;
+    expects_mult_no_overflow(std::abs(len), pos_diff);
+
+    return len * static_cast<difference_type>(pos_diff) + from_it.curr_ - to_it.curr_;
+  }
+
+  // -- Contracts
+
+  // TODO(compiler): Replace with standard contracts
+  constexpr static auto expects_same_range(const iterator& lhs, const iterator& rhs) {
+    Expects(lhs.begin_ == rhs.begin_);
+    Expects(lhs.end_ == rhs.end_);
+  }
+
+  constexpr static auto expects_mult_no_overflow(const difference_type& len,
+                                                 const bound_type& bound)
+    requires(!is_unbounded)
+  {
+    GSL_ASSUME(len > 0);
+    Expects(bound <= static_cast<bound_type>(std::numeric_limits<difference_type>::max() / len));
   }
 
   base_iterator_type curr_ = {};
@@ -507,6 +545,8 @@ template <std::integral BoundType>
 ring(BoundType) -> ring<ranges::ring_view_bound_t>;
 
 }  // namespace views
+
+// TODO(compiler): Replace GSL_ASSUME with assume attribute
 
 // TODO(improve): reverse, borrow, non-common range?, noexcept, guarantees
 

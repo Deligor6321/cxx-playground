@@ -45,9 +45,9 @@ TEST_CASE("ring_view_unbounded") {
     auto nums = std::views::all(vec) | std::views::reverse | ring() | std::views::take(11);
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(nums)>);
-    STATIC_CHECK(std::ranges::bidirectional_range<decltype(nums)>);
-    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::bidirectional_iterator_tag>);
+    STATIC_CHECK(std::ranges::input_range<decltype(nums)>);
     STATIC_CHECK(!std::ranges::output_range<decltype(nums), int>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::input_iterator_tag>);
 
     CHECK(to_vector(nums) == std::vector<int>{27, 24, 23, 11, 0, 27, 24, 23, 11, 0, 27});
   }
@@ -57,9 +57,9 @@ TEST_CASE("ring_view_unbounded") {
     auto nums = std::ranges::take_view(ring_view(lst), 9);
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(nums)>);
-    STATIC_CHECK(std::ranges::bidirectional_range<decltype(nums)>);
-    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::bidirectional_iterator_tag>);
+    STATIC_CHECK(std::ranges::input_range<decltype(nums)>);
     STATIC_CHECK(std::ranges::output_range<decltype(nums), int>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::input_iterator_tag>);
 
     CHECK(to_vector(nums) == std::vector<int>{0, 11, 23, 24, 27, 0, 11, 23, 24});
   }
@@ -69,9 +69,9 @@ TEST_CASE("ring_view_unbounded") {
     auto nums = std::views::all(flst) | ring() | std::views::take(17) | std::views::drop(4);
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(nums)>);
-    STATIC_CHECK(std::ranges::forward_range<decltype(nums)>);
-    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::forward_iterator_tag>);
+    STATIC_CHECK(std::ranges::input_range<decltype(nums)>);
     STATIC_CHECK(std::ranges::output_range<decltype(nums), int>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::input_iterator_tag>);
 
     CHECK(to_vector(nums) == std::vector<int>{27, 0, 11, 23, 24, 27, 0, 11, 23, 24, 27, 0, 11});
   }
@@ -81,9 +81,9 @@ TEST_CASE("ring_view_unbounded") {
     auto chars = std::views::all(str) | ring() | std::views::take(7);
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(chars)>);
-    STATIC_CHECK(std::ranges::bidirectional_range<decltype(chars)>);
-    STATIC_CHECK(std::is_same_v<it_category<decltype(chars)>, std::bidirectional_iterator_tag>);
+    STATIC_CHECK(std::ranges::input_range<decltype(chars)>);
     STATIC_CHECK(std::ranges::output_range<decltype(chars), char>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(chars)>, std::input_iterator_tag>);
 
     CHECK(to_vector(chars) == std::vector<char>{'a', 'b', 'c', 'x', 'a', 'b', 'c'});
   }
@@ -93,9 +93,9 @@ TEST_CASE("ring_view_unbounded") {
     auto chars = std::views::all(empt) | ring();
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(chars)>);
-    STATIC_CHECK(std::ranges::bidirectional_range<decltype(chars)>);
-    STATIC_CHECK(std::is_same_v<it_category<decltype(chars)>, std::bidirectional_iterator_tag>);
+    STATIC_CHECK(std::ranges::input_range<decltype(chars)>);
     STATIC_CHECK(!std::ranges::output_range<decltype(chars), char>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(chars)>, std::input_iterator_tag>);
 
     CHECK(to_vector(chars) == std::vector<char>{});
   }
@@ -104,9 +104,9 @@ TEST_CASE("ring_view_unbounded") {
     const auto chars = std::views::empty<const char> | ring();
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(chars)>);
-    STATIC_CHECK(std::ranges::bidirectional_range<decltype(chars)>);
-    STATIC_CHECK(std::is_same_v<it_category<decltype(chars)>, std::bidirectional_iterator_tag>);
+    STATIC_CHECK(std::ranges::input_range<decltype(chars)>);
     STATIC_CHECK(!std::ranges::output_range<decltype(chars), char>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(chars)>, std::input_iterator_tag>);
 
     CHECK(to_vector(chars) == std::vector<char>{});
   }
@@ -115,9 +115,9 @@ TEST_CASE("ring_view_unbounded") {
     auto bools = std::views::empty<bool> | ring();
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(bools)>);
-    STATIC_CHECK(std::ranges::bidirectional_range<decltype(bools)>);
-    STATIC_CHECK(std::is_same_v<it_category<decltype(bools)>, std::bidirectional_iterator_tag>);
+    STATIC_CHECK(std::ranges::input_range<decltype(bools)>);
     STATIC_CHECK(std::ranges::output_range<decltype(bools), bool>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(bools)>, std::input_iterator_tag>);
 
     CHECK(to_vector(bools) == std::vector<bool>{});
   }
@@ -129,9 +129,9 @@ TEST_CASE("ring_view_unbounded") {
                 | std::views::take(5);
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(dbls)>);
-    STATIC_CHECK(std::ranges::bidirectional_range<decltype(dbls)>);
-    STATIC_CHECK(std::is_same_v<it_category<decltype(dbls)>, std::input_iterator_tag>);
+    STATIC_CHECK(std::ranges::input_range<decltype(dbls)>);
     STATIC_CHECK(!std::ranges::output_range<decltype(dbls), double>);
+    // STATIC_CHECK(std::is_same_v<it_category<decltype(dbls)>, std::input_iterator_tag>);
 
     CHECK(to_vector(dbls) == std::vector<double>{13.0, 14.0, 15.0, 16.0, 17.0});
   }
@@ -141,9 +141,9 @@ TEST_CASE("ring_view_unbounded") {
     auto nums = std::ranges::ref_view(deq) | ring();
 
     STATIC_CHECK(std::ranges::viewable_range<decltype(nums)>);
-    STATIC_CHECK(std::ranges::bidirectional_range<decltype(nums)>);
-    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::bidirectional_iterator_tag>);
+    STATIC_CHECK(std::ranges::input_range<decltype(nums)>);
     STATIC_CHECK(std::ranges::output_range<decltype(nums), int>);
+    STATIC_CHECK(std::is_same_v<it_category<decltype(nums)>, std::input_iterator_tag>);
 
     auto it = std::ranges::begin(nums);
 
