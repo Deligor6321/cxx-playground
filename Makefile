@@ -166,11 +166,12 @@ test-fast : test-fast-$(DEFAULT_BUILD_TYPE)
 iwyu : $(ROOT_DIR)/$(COMPILE_COMMANDS)
 	iwyu_tool.py -p $(ROOT_DIR) -- -Xiwyu --mapping_file=$(ROOT_DIR)/tools/iwyu/libcxx.imp
 
-cppcheck :
-	cppcheck -v --error-exitcode=1 --enable=all --language=c++ \
+cppcheck : $(ROOT_DIR)/$(COMPILE_COMMANDS)
+	cppcheck -v --error-exitcode=1 --check-level=exhaustive \
+		--cppcheck-build-dir=$(ROOT_DIR) --project=$(ROOT_DIR)/$(COMPILE_COMMANDS) \
+		--enable=all --addon=threadsafety \
 		--suppress=unmatchedSuppression --suppress=missingIncludeSystem --suppress=unusedFunction \
-		--inline-suppr --suppressions-list=cppcheck-suppressions.list \
-		$(SRC_FILES)
+		--inline-suppr --suppressions-list=cppcheck-suppressions.txt
 
 clang-format :
 	clang-format -n --Werror $(SRC_FILES)
