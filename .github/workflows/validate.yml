@@ -31,12 +31,6 @@ jobs:
         cached: ${{ steps.cache-llvm.outputs.cache-hit }}
         env: true
 
-    - name: Install system packages
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt-get install ninja-build
-
     - name: Install pipx packages
       shell: bash
       run: |
@@ -52,10 +46,15 @@ jobs:
         conan profile detect --force --name base
         cp conan/profiles/clang-16 $(dirname $(conan profile path base))/default
 
-    - name: Install conan tools
+    - name: Install conan packages
       shell: bash
       run: |
-        conan install --tool-requires "cppcheck/2.12.1" --output-folder=./pkgs
+        conan install \
+          --tool-requires "cmake/3.27.7" \
+          --tool-requires "ninja/1.11.1" \
+          --tool-requires "cppcheck/2.12.1" \
+          --output-folder=./pkgs \
+          --build=missing
 
     - name: Validate
       shell: bash
