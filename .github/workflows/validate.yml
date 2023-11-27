@@ -31,14 +31,15 @@ jobs:
         cached: ${{ steps.cache-llvm.outputs.cache-hit }}
         env: true
 
-    - name: Install and configure tools
+    - name: Install system packages
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install cppcheck
         sudo apt-get install ninja-build
-        sudo apt-get install iwyu
 
+    - name: Install pipx packages
+      shell: bash
+      run: |
         pipx install conan
         pipx install cpplint
         pipx install clang-format==16.0.6
@@ -51,7 +52,14 @@ jobs:
         conan profile detect --force --name base
         cp conan/profiles/clang-16 $(dirname $(conan profile path base))/default
 
+    - name: Install conan tools
+      shell: bash
+      run: |
+        conan install --tool-requires "cppcheck/2.12.1" --output-folder=./pkgs
+
     - name: Validate
       shell: bash
-      run: make -k validate
+      run: |
+        source ./pkgs/conanbuild.sh
+        make -k validate
 
