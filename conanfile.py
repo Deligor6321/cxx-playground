@@ -8,13 +8,11 @@ from conan.tools.build import check_min_cppstd
 class CxxPlaygroundRecipe(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
 
+    requires = "ms-gsl/4.0.0"
+    test_requires = "benchmark/1.8.3", "catch2/3.4.0"
+
     def validate_build(self):
         check_min_cppstd(self, 23)
-
-    def requirements(self):
-        self.requires("benchmark/1.8.3")
-        self.requires("catch2/3.4.0")
-        self.requires("ms-gsl/4.0.0")
 
     def generate(self):
         cmake_deps = CMakeDeps(self)
