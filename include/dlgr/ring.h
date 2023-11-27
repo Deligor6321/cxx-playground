@@ -114,10 +114,10 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
     };
   }
 
-  [[nodiscard]] constexpr auto end() const
+  [[nodiscard]] constexpr auto end() const -> unreachable_sentinel
     requires(is_unbounded)
   {
-    return unreachable_sentinel{};
+    return {};
   }
 
   // -- Base access
@@ -134,7 +134,7 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
   // -- Helper functions
 
   constexpr auto validate() const
-      noexcept(is_unbounded || !std::ranges::random_access_range<base_type>) {
+      noexcept(is_unbounded || !std::ranges::random_access_range<base_type>) -> void {
     if constexpr (!is_unbounded && std::ranges::random_access_range<base_type>) {
       auto size = std::ranges::size(base_);
       if (size != 0
@@ -480,13 +480,13 @@ class ring_view<RangeType, BoundType>::iterator {
   // -- Contracts
 
   // TODO(compiler): Replace with standard contracts
-  constexpr static auto expects_same_range(const iterator& lhs, const iterator& rhs) {
+  constexpr static auto expects_same_range(const iterator& lhs, const iterator& rhs) -> void {
     Expects(lhs.begin_ == rhs.begin_);
     Expects(lhs.end_ == rhs.end_);
   }
 
   constexpr static auto expects_mult_no_overflow(const difference_type& len,
-                                                 const bound_type& bound)
+                                                 const bound_type& bound) -> void
     requires(!is_unbounded)
   {
     GSL_ASSUME(len > 0);
