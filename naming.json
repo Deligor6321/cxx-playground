@@ -1,0 +1,9 @@
+{
+  "script": "naming",
+  "args": [
+    "--private-member-variable='^[a-z][_0-9a-z]*_$'",
+    "--var='^[a-z][_0-9a-z]*$'",
+    "--const='^[a-z][_0-9a-z]*(\\s*<.*\\s*>)?$'",
+    "--function='^([a-z][_0-9a-z]*|operator.*)$'"
+  ]
+}

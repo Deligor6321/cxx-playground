@@ -37,7 +37,7 @@ enum class my_flag : std::uint8_t {
 }  // namespace
 
 // NOLINTBEGIN
-TEST_CASE("enum_flags_wo_mask") {
+TEST_CASE("enum_flags_wo_mask") {  // cppcheck-suppress[naming-functionName]
   using test_flags_t = enum_flags<my_flag, enum_flags_mask_unspecified_t>;
 
   STATIC_CHECK(std::is_trivially_copyable_v<test_flags_t>);
@@ -108,7 +108,7 @@ TEST_CASE("enum_flags_wo_mask") {
   CHECK(flags2.test(my_flag::third));
 }
 
-TEST_CASE("enum_flags_with_mask") {
+TEST_CASE("enum_flags_with_mask") {  // cppcheck-suppress[naming-functionName]
   using test_flags_t =
       enum_flags<my_flag, enum_flags_mask_t<my_flag, my_flag::first, my_flag::second,
                                             my_flag::third, my_flag::first_and_second>>;
@@ -191,7 +191,7 @@ TEST_CASE("enum_flags_with_mask") {
   CHECK(flags2.test(~test_flags_t(my_flag::third)));
 }
 
-TEST_CASE("enum_flags_with_custom_mask") {
+TEST_CASE("enum_flags_with_custom_mask") {  // cppcheck-suppress[naming-functionName]
   using test_flags_t =
       enum_flags<my_flag, enum_flags_mask_t<my_flag, my_flag::first, my_flag::third>>;
 
@@ -273,7 +273,7 @@ TEST_CASE("enum_flags_with_custom_mask") {
   CHECK(to_bitset(flags2) == 0b00000001);
 }
 
-TEST_CASE("enum_flags_deductions") {
+TEST_CASE("enum_flags_deductions") {  // cppcheck-suppress[naming-functionName]
   STATIC_CHECK(std::is_same_v<decltype(enum_flags(my_flag::first)),
                               enum_flags<my_flag, enum_flags_mask_unspecified_t>>);
 
@@ -288,7 +288,7 @@ TEST_CASE("enum_flags_deductions") {
                      enum_flags<my_flag, enum_flags_mask_spec_t<std::uint8_t, 0b00000001>>>);
 }
 
-TEST_CASE("enum_flags_underlying_type") {
+TEST_CASE("enum_flags_underlying_type") {  // cppcheck-suppress[naming-functionName]
   {
     enum test_enum : int { val1, val2, val3 };
     auto flags = enum_flags(test_enum::val2);

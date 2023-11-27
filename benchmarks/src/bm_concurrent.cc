@@ -30,7 +30,7 @@ void bm_concurrent_condvar_shared_mutex(benchmark::State& state) {
     }
   });
 
-  for ([[maybe_unused]] auto _it : state) {
+  for ([[maybe_unused]] auto iter : state) {
     auto lock = std::unique_lock(mutex);
     cond_var.wait(lock, [&] { return !ready; });
     ready = true;
@@ -67,7 +67,7 @@ void bm_concurrent_condvar_mutex(benchmark::State& state) {
     }
   });
 
-  for ([[maybe_unused]] auto _it : state) {
+  for ([[maybe_unused]] auto iter : state) {
     auto lock = std::unique_lock(mutex);
     cond_var.wait(lock, [&] { return !ready; });
     ready = true;
@@ -100,7 +100,7 @@ void bm_concurrent_semaphore(benchmark::State& state) {
     }
   });
 
-  for ([[maybe_unused]] auto _it : state) {
+  for ([[maybe_unused]] auto iter : state) {
     ready_signal.acquire();
     start_signal.release();
   }
@@ -128,7 +128,7 @@ void bm_concurrent_atomic(benchmark::State& state) {
     }
   });
 
-  for ([[maybe_unused]] auto _it : state) {
+  for ([[maybe_unused]] auto iter : state) {
     ready_state.wait(false, std::memory_order::acquire);
     ready_state.store(false, std::memory_order::release);
     ready_state.notify_one();
@@ -160,7 +160,7 @@ void bm_concurrent_flag(benchmark::State& state) {
     }
   });
 
-  for ([[maybe_unused]] auto _it : state) {
+  for ([[maybe_unused]] auto iter : state) {
     ready_state.wait(false, std::memory_order::acquire);
     ready_state.clear(std::memory_order::release);
     ready_state.notify_one();

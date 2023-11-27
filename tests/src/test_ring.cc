@@ -39,7 +39,7 @@ using it_category = typename it_traits<T>::iterator_category;
 }  // namespace
 
 // NOLINTBEGIN
-TEST_CASE("ring_view_unbounded") {
+TEST_CASE("ring_view_unbounded") {  // cppcheck-suppress[naming-functionName]
   {
     const auto vec = std::vector<int>{0, 11, 23, 24, 27};
     auto nums = std::views::all(vec) | std::views::reverse | ring() | std::views::take(11);
@@ -157,7 +157,7 @@ TEST_CASE("ring_view_unbounded") {
   }
 }
 
-TEST_CASE("ring_view_bounded") {
+TEST_CASE("ring_view_bounded") {  // cppcheck-suppress[naming-functionName]
   {
     auto nums = std::ranges::single_view<int>(134) | ring(10);
 

@@ -24,6 +24,7 @@ CONAN_INSTALL_PRODUCT := generators/conan_toolchain.cmake
 CMD_SEP := ;
 CMD_AND := &&
 CMAKE_FILES := $(shell find $(ROOT_DIR) -type f -name CMakeLists.txt)
+N_JOBS := $(shell nproc 2>/dev/null || sysctl -n hw.logicalcpu)
 SRC_FILES :=$(shell \
 	$(foreach dir, $(SOURCE_DIRS), \
 		$(foreach ext, $(SOURCE_EXTENSIONS), \
@@ -167,9 +168,12 @@ iwyu : $(ROOT_DIR)/$(COMPILE_COMMANDS)
 	iwyu_tool.py -p $(ROOT_DIR) -- -Xiwyu --mapping_file=$(ROOT_DIR)/tools/iwyu/libcxx.imp
 
 cppcheck : $(ROOT_DIR)/$(COMPILE_COMMANDS)
-	cppcheck -v --error-exitcode=1 \
-		--cppcheck-build-dir=$(ROOT_DIR) --project=$(ROOT_DIR)/$(COMPILE_COMMANDS) \
-		--enable=all --addon=threadsafety --addon=findcasts --addon=misc \
+	mkdir -p $(BUILD_DIR)/cppcheck
+	cppcheck -v --error-exitcode=1 -j $(N_JOBS) --check-level=exhaustive \
+		--cppcheck-build-dir=$(BUILD_DIR)/cppcheck \
+		--checkers-report=$(BUILD_DIR)/cppcheck_report.txt \
+		--project=$(ROOT_DIR)/$(COMPILE_COMMANDS) \
+		--enable=all --addon=threadsafety --addon=findcasts --addon=misc --addon=naming.json \
 		--suppress=unmatchedSuppression --suppress=missingIncludeSystem --suppress=unusedFunction \
 		--inline-suppr --suppressions-list=$(ROOT_DIR)/cppcheck-suppressions.txt
 

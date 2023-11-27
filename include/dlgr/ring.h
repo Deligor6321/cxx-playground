@@ -37,7 +37,7 @@ constexpr inline ring_view_unreachable_bound_t ring_view_unreachable_bound = {};
 template <std::ranges::forward_range RangeType,
           ring_view_bound BoundType = ring_view_unreachable_bound_t>
 class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundType>> {
-  constexpr static bool is_unbounded = std::is_same_v<BoundType, ring_view_unreachable_bound_t>;
+  constexpr static bool is_unbounded_ = std::is_same_v<BoundType, ring_view_unreachable_bound_t>;
 
  public:
   // -- Nested types
@@ -51,9 +51,9 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
   using bound_type = BoundType;
   using iterator_type = iterator<false>;
   using const_iterator_type = iterator<true>;
-  using sentinel_type = std::conditional_t<is_unbounded, unreachable_sentinel, iterator_type>;
+  using sentinel_type = std::conditional_t<is_unbounded_, unreachable_sentinel, iterator_type>;
   using const_sentinel_type =
-      std::conditional_t<is_unbounded, unreachable_sentinel, const_iterator_type>;
+      std::conditional_t<is_unbounded_, unreachable_sentinel, const_iterator_type>;
 
   // -- Constructors
 
@@ -89,7 +89,7 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
   }
 
   [[nodiscard]] constexpr auto end() -> iterator_type
-    requires(!is_unbounded)
+    requires(!is_unbounded_)
   {
     auto base_begin = std::ranges::begin(base_);
     auto base_end = std::ranges::end(base_);
@@ -102,7 +102,7 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
   }
 
   [[nodiscard]] constexpr auto end() const -> const_iterator_type
-    requires(!is_unbounded)
+    requires(!is_unbounded_)
   {
     auto base_begin = std::ranges::begin(base_);
     auto base_end = std::ranges::end(base_);
@@ -115,7 +115,7 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
   }
 
   [[nodiscard]] constexpr auto end() const -> unreachable_sentinel
-    requires(is_unbounded)
+    requires(is_unbounded_)
   {
     return {};
   }
@@ -134,8 +134,8 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
   // -- Helper functions
 
   constexpr auto validate() const
-      noexcept(is_unbounded || !std::ranges::random_access_range<base_type>) -> void {
-    if constexpr (!is_unbounded && std::ranges::random_access_range<base_type>) {
+      noexcept(is_unbounded_ || !std::ranges::random_access_range<base_type>) -> void {
+    if constexpr (!is_unbounded_ && std::ranges::random_access_range<base_type>) {
       auto size = std::ranges::size(base_);
       if (size != 0
           && bound_ > static_cast<bound_type>(std::numeric_limits<decltype(size)>::max() / size)) {
@@ -175,7 +175,7 @@ class ring_view<RangeType, BoundType>::iterator {
   using bound_type = typename parent_type::bound_type;
   using sentinel = typename parent_type::unreachable_sentinel;
 
-  constexpr static bool is_unbounded = std::is_same_v<bound_type, ring_view_unreachable_bound_t>;
+  constexpr static bool is_unbounded_ = std::is_same_v<bound_type, ring_view_unreachable_bound_t>;
 
  public:
   // -- Member types
@@ -187,7 +187,7 @@ class ring_view<RangeType, BoundType>::iterator {
   using reference = std::iter_reference_t<base_iterator_type>;
   using pointer = typename std::iterator_traits<base_iterator_type>::pointer;
   using iterator_category =
-      std::conditional_t<is_unbounded, std::input_iterator_tag,
+      std::conditional_t<is_unbounded_, std::input_iterator_tag,
                          detail::min_iterator_category_t<
                              typename std::iterator_traits<base_iterator_type>::iterator_category,
                              std::random_access_iterator_tag>>;
@@ -263,13 +263,13 @@ class ring_view<RangeType, BoundType>::iterator {
   // -- Sentinel equality comparison
 
   [[nodiscard]] constexpr auto operator==([[maybe_unused]] const sentinel& sen) const -> bool
-    requires(is_unbounded)
+    requires(is_unbounded_)
   {
     return curr_ == end_;
   }
 
   [[nodiscard]] constexpr friend auto operator==(const sentinel& sen, const iterator& iter) -> bool
-    requires(is_unbounded)
+    requires(is_unbounded_)
   {
     return iter == sen;
   }
@@ -310,7 +310,7 @@ class ring_view<RangeType, BoundType>::iterator {
 
   [[nodiscard]] constexpr friend auto operator-(const iterator& lhs, const iterator& rhs)
       -> difference_type
-    requires(!is_unbounded && std::ranges::random_access_range<parent_base_type>
+    requires(!is_unbounded_ && std::ranges::random_access_range<parent_base_type>
              && std::signed_integral<difference_type>)
   {
     expects_same_range(lhs, rhs);
@@ -321,7 +321,7 @@ class ring_view<RangeType, BoundType>::iterator {
   // -- Comparison
 
   [[nodiscard]] constexpr friend auto operator==(const iterator& lhs, const iterator& rhs) -> bool
-    requires(!is_unbounded && std::equality_comparable<base_iterator_type>)
+    requires(!is_unbounded_ && std::equality_comparable<base_iterator_type>)
   {
     expects_same_range(lhs, rhs);
 
@@ -329,7 +329,7 @@ class ring_view<RangeType, BoundType>::iterator {
   }
 
   [[nodiscard]] constexpr friend auto operator<(const iterator& lhs, const iterator& rhs) -> bool
-    requires(!is_unbounded && std::totally_ordered<base_iterator_type>)
+    requires(!is_unbounded_ && std::totally_ordered<base_iterator_type>)
   {
     expects_same_range(lhs, rhs);
 
@@ -337,7 +337,7 @@ class ring_view<RangeType, BoundType>::iterator {
   }
 
   [[nodiscard]] constexpr friend auto operator>(const iterator& lhs, const iterator& rhs) -> bool
-    requires(!is_unbounded && std::totally_ordered<base_iterator_type>)
+    requires(!is_unbounded_ && std::totally_ordered<base_iterator_type>)
   {
     expects_same_range(lhs, rhs);
 
@@ -345,7 +345,7 @@ class ring_view<RangeType, BoundType>::iterator {
   }
 
   [[nodiscard]] constexpr friend auto operator<=(const iterator& lhs, const iterator& rhs) -> bool
-    requires(!is_unbounded && std::totally_ordered<base_iterator_type>)
+    requires(!is_unbounded_ && std::totally_ordered<base_iterator_type>)
   {
     expects_same_range(lhs, rhs);
 
@@ -353,7 +353,7 @@ class ring_view<RangeType, BoundType>::iterator {
   }
 
   [[nodiscard]] constexpr friend auto operator>=(const iterator& lhs, const iterator& rhs) -> bool
-    requires(!is_unbounded && std::totally_ordered<base_iterator_type>)
+    requires(!is_unbounded_ && std::totally_ordered<base_iterator_type>)
   {
     expects_same_range(lhs, rhs);
 
@@ -380,7 +380,7 @@ class ring_view<RangeType, BoundType>::iterator {
   constexpr auto inc() -> iterator& {
     ++curr_;
     if (curr_ == end_) {
-      if constexpr (!is_unbounded) {
+      if constexpr (!is_unbounded_) {
         Expects(pos_ <= std::numeric_limits<bound_type>::max() - 1);
         ++pos_;
       }
@@ -395,7 +395,7 @@ class ring_view<RangeType, BoundType>::iterator {
   {
     if (curr_ == begin_) {
       curr_ = end_;
-      if constexpr (!is_unbounded) {
+      if constexpr (!is_unbounded_) {
         Expects(pos_ >= std::numeric_limits<bound_type>::min() + 1);
         --pos_;
       }
@@ -417,7 +417,7 @@ class ring_view<RangeType, BoundType>::iterator {
     const auto to_end = curr_ == begin_ ? len : std::ranges::distance(curr_, end_);
     {
       const auto div_mod = std::div(diff - to_end, len);
-      if constexpr (!is_unbounded) {
+      if constexpr (!is_unbounded_) {
         GSL_ASSUME(div_mod.quot >= 0);
         Expects(pos_ <= std::numeric_limits<bound_type>::max() - div_mod.quot);
         pos_ += static_cast<bound_type>(div_mod.quot);
@@ -444,7 +444,7 @@ class ring_view<RangeType, BoundType>::iterator {
     const auto to_rend = curr_ == rbegin ? len : std::ranges::distance(begin_, curr_) + 1;
     {
       const auto div_mod = std::div(diff - to_rend, len);
-      if constexpr (!is_unbounded) {
+      if constexpr (!is_unbounded_) {
         GSL_ASSUME(div_mod.quot >= 0);
         Expects(pos_ <= std::numeric_limits<bound_type>::max() - div_mod.quot);
         pos_ -= static_cast<bound_type>(div_mod.quot);
@@ -459,7 +459,7 @@ class ring_view<RangeType, BoundType>::iterator {
 
   [[nodiscard]] constexpr friend auto dist_from_to(const iterator& from_it, const iterator& to_it)
       -> difference_type
-    requires(!is_unbounded && std::ranges::random_access_range<parent_base_type>
+    requires(!is_unbounded_ && std::ranges::random_access_range<parent_base_type>
              && std::signed_integral<difference_type>)
   {
     GSL_ASSUME(from_it.pos_ >= to_it.pos_);
@@ -487,7 +487,7 @@ class ring_view<RangeType, BoundType>::iterator {
 
   constexpr static auto expects_mult_no_overflow(const difference_type& len,
                                                  const bound_type& bound) -> void
-    requires(!is_unbounded)
+    requires(!is_unbounded_)
   {
     GSL_ASSUME(len > 0);
     Expects(bound <= static_cast<bound_type>(std::numeric_limits<difference_type>::max() / len));
