@@ -33,13 +33,13 @@ runs:
       conan --version
       conan profile detect --force --name base
       cp conan/profiles/${{ inputs.compiler }} $(dirname $(conan profile path base))/default
-      echo "COMPILER_KEY=${{ hashFiles('./conan/profiles/${{ inputs.compiler }}') }}" >> $GITHUB_ENV
+      echo "CONAN_PROFILE=$(conan profile path default)" >> $GITHUB_ENV
 
   - name: Restore conan cache
     id: cache-conan
     uses: ./.github/actions/conan_cache/restore
     with:
-      key: ${{ runner.os }}-${{ runner.arch }}__conan-${{ env.CONAN_VERSION }}__${{ env.COMPILER_KEY }}__${{ hashFiles('./conanfile.py') }}
+      key: ${{ runner.os }}-${{ runner.arch }}__conan-${{ env.CONAN_VERSION }}__${{ hashFiles(env.CONAN_PROFILE, './conanfile.py') }}
 
   - name: Install deps
     shell: bash
