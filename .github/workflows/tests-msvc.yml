@@ -11,24 +11,13 @@ jobs:
     runs-on: [windows-2022]
 
     env:
-      CONAN_VERSION: 2.0.14
+      COMPILER: msvc-19.3
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install pipx packages
-      shell: bash
-      run: |
-        pipx install conan==${{ env.CONAN_VERSION }}
-
-    - name: Configure conan
-      shell: bash
-      run: |
-        pip install conan==${{ env.CONAN_VERSION }}
-        conan --version
-        conan profile detect --force --name base
-        cp conan/profiles/msvc-19.3 $(dirname $(conan profile path base))/default
-
     - name: Run tests
       uses: ./.github/actions/run_tests
+      with:
+        compiler: ${{ env.COMPILER }}
 

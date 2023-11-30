@@ -12,23 +12,13 @@ jobs:
 
     env:
       DEVELOPER_DIR: /Applications/Xcode_15.0.1.app/Contents/Developer
-      CONAN_VERSION: 2.0.14
+      COMPILER: apple-clang-15
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install pipx packages
-      shell: bash
-      run: |
-        pipx install conan==${{ env.CONAN_VERSION }}
-
-    - name: Configure conan
-      shell: bash
-      run: |
-        conan --version
-        conan profile detect --force --name base
-        cp conan/profiles/apple-clang-15 $(dirname $(conan profile path base))/default
-
     - name: Run tests
       uses: ./.github/actions/run_tests
+      with:
+        compiler: ${{ env.COMPILER }}
 

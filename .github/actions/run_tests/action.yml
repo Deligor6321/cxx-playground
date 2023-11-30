@@ -1,14 +1,23 @@
 
 name: Run tests
 
+inputs:
+  compiler:
+    description: 'Compiler'
+    required: true
+
 runs:
   using: 'composite'
+
+  env:
+    BUILD_TYPE: Release
+    CONAN_VERSION: 2.0.14
+
   steps:
   - name: Setup build options (Linux)
     if: ${{ runner.os == 'Linux' }}
     shell: bash
     run: |
-      echo "BUILD_TYPE=Release" >> $GITHUB_ENV
       echo "CMAKE_CONFIG_PRESET=conan-release" >> $GITHUB_ENV
       echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
       echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
@@ -17,7 +26,6 @@ runs:
     if: ${{ runner.os == 'Windows' }}
     shell: bash
     run: |
-      echo "BUILD_TYPE=Release" >> $GITHUB_ENV
       echo "CMAKE_CONFIG_PRESET=conan-default" >> $GITHUB_ENV
       echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
       echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
@@ -26,16 +34,24 @@ runs:
     if: ${{ runner.os == 'macOS' }}
     shell: bash
     run: |
-      echo "BUILD_TYPE=Release" >> $GITHUB_ENV
       echo "CMAKE_CONFIG_PRESET=conan-release" >> $GITHUB_ENV
       echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
       echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
+
+  - name: Install and configure conan
+    shell: bash
+    run: |
+      pipx install conan==${{ env.CONAN_VERSION }}
+      conan --version
+      conan profile detect --force --name base
+      cp conan/profiles/${{ inputs.compiler }} $(dirname $(conan profile path base))/default
+      echo "COMPILER_KEY=${{ hashFiles('./conan/profiles/${{ inputs.compiler }}') }}" >> $GITHUB_ENV
 
   - name: Restore conan cache
     id: cache-conan
     uses: ./.github/actions/conan_cache/restore
     with:
-      key: ${{ runner.os }}-${{ runner.arch }}__conan-${{ env.CONAN_VERSION }}__${{ hashFiles('./conanfile.py') }}
+      key: ${{ runner.os }}-${{ runner.arch }}__conan-${{ env.CONAN_VERSION }}__${{ env.COMPILER_KEY }}__${{ hashFiles('./conanfile.py') }}
 
   - name: Install deps
     shell: bash
