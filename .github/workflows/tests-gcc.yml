@@ -22,7 +22,12 @@ jobs:
         echo "CC=gcc-13" >> $GITHUB_ENV
         echo "CXX=g++-13" >> $GITHUB_ENV
 
-    - name: Configure runner
+    - name: Install pipx packages
+      shell: bash
+      run: |
+        pipx install conan==${{ env.CONAN_VERSION }}
+
+    - name: Configure conan
       shell: bash
       run: |
         pip install conan==${{ env.CONAN_VERSION }}

@@ -17,10 +17,14 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Configure runner
+    - name: Install pipx packages
       shell: bash
       run: |
-        pip3 install conan==${{ env.CONAN_VERSION }}
+        pipx install conan==${{ env.CONAN_VERSION }}
+
+    - name: Configure conan
+      shell: bash
+      run: |
         conan --version
         conan profile detect --force --name base
         cp conan/profiles/apple-clang-15 $(dirname $(conan profile path base))/default
