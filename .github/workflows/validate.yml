@@ -55,7 +55,7 @@ jobs:
       with:
         path: |
           ./conan_cache.tgz
-        key: ${{ runner.os }}-${{ runner.arch }}__conan-${{ env.CONAN_VERSION }}__${{ hashFiles('./.github/workflows/cfg/tools_conanfile.txt,./conanfile.py') }}
+        key: ${{ runner.os }}-${{ runner.arch }}__conan-${{ env.CONAN_VERSION }}__${{ hashFiles('./.github/workflows/cfg/tools_conanfile.txt', './conanfile.py') }}
 
     - name: Restore conan cache
       if: ${{ steps.cache-conan.outputs.cache-hit }}
