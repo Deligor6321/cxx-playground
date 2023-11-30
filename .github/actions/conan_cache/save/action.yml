@@ -9,7 +9,6 @@ runs:
   using: 'composite'
   steps:
   - name: conan cache save
-    if: ${{ !steps.cache-conan.outputs.cache-hit }}
     shell: bash
     run: conan cache save "*/*:*" --file=conan_cache.tgz
 

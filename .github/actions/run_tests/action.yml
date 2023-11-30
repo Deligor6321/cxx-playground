@@ -31,6 +31,12 @@ runs:
       echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
       echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
 
+  - name: Restore conan cache
+    id: cache-conan
+    uses: ./.github/actions/conan_cache/restore
+    with:
+      key: ${{ runner.os }}-${{ runner.arch }}__conan-${{ env.CONAN_VERSION }}__${{ hashFiles('./conanfile.py') }}
+
   - name: Install deps
     shell: bash
     run: >
@@ -49,3 +55,9 @@ runs:
   - name: Run tests
     shell: bash
     run: ctest --preset ${{ env.CMAKE_TEST_PRESET }} --output-on-failure
+
+  - name: Save conan cache
+    if: ${{ !steps.cache-conan.outputs.cache-hit }}
+    uses: ./.github/actions/conan_cache/save
+    with:
+      key: ${{ steps.cache-conan.outputs.cache-primary-key }}

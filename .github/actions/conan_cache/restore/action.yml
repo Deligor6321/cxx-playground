@@ -9,8 +9,10 @@ inputs:
 outputs:
   cache-hit:
     description: 'Indictaes if the cache hit or not'
+    value: ${{ steps.cache-conan.outputs.cache-hit }}
   cache-primary-key:
     description: 'The cache key'
+    value: ${{ steps.cache-conan.outputs.cache-primary-key }}
 
 runs:
   using: 'composite'
@@ -25,8 +27,4 @@ runs:
   - name: conan cache restore
     if: ${{ steps.cache-conan.outputs.cache-hit }}
     shell: bash
-    run: |
-      conan cache restore conan_cache.tgz
-
-      echo "cache-hit=${{ steps.cache-conan.outputs.cache-hit }}" >> $GITHUB_OUTPUT
-      echo "cache-primary-key=${{ steps.cache-conan.outputs.cache-primary-key }}" >> $GITHUB_OUTPUT
+    run: conan cache restore conan_cache.tgz
