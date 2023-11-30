@@ -49,19 +49,11 @@ jobs:
         conan profile detect --force --name base
         cp conan/profiles/clang-16 $(dirname $(conan profile path base))/default
 
-    - name: Cache conan
-      id: cache-conan
-      uses: actions/cache@v3
-      with:
-        path: |
-          ./conan_cache.tgz
-        key: ${{ runner.os }}-${{ runner.arch }}__conan-${{ env.CONAN_VERSION }}__${{ hashFiles('./.github/workflows/cfg/tools_conanfile.txt', './conanfile.py') }}
-
     - name: Restore conan cache
-      if: ${{ steps.cache-conan.outputs.cache-hit }}
-      shell: bash
-      run: |
-        conan cache restore conan_cache.tgz
+      id: cache-conan
+      uses: ./.github/actions/conan_cache/restore
+      with:
+        key: ${{ runner.os }}-${{ runner.arch }}__conan-${{ env.CONAN_VERSION }}__${{ hashFiles('./.github/workflows/cfg/tools_conanfile.txt', './conanfile.py') }}
 
     - name: Install conan packages
       shell: bash
@@ -78,7 +70,7 @@ jobs:
 
     - name: Save conan cache
       if: ${{ !steps.cache-conan.outputs.cache-hit }}
-      shell: bash
-      run: |
-        conan cache save "*/*:*" --file=conan_cache.tgz
+      uses: ./.github/actions/conan_cache/save
+      with:
+        key: ${{ steps.cache-conan.outputs.cache-primary-key }}
 

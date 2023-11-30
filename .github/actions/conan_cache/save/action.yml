@@ -1,0 +1,21 @@
+name: Conan cache save
+
+inputs:
+  key:
+    description: 'Key for the cache'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+  - name: conan cache save
+    if: ${{ !steps.cache-conan.outputs.cache-hit }}
+    shell: bash
+    run: conan cache save "*/*:*" --file=conan_cache.tgz
+
+  - name: cache/save action
+    id: cache-conan
+    uses: actions/cache/save@v3
+    with:
+      path: ./conan_cache.tgz
+      key: ${{ inputs.key }}

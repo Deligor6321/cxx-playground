@@ -1,0 +1,32 @@
+
+name: Conan cache restore
+
+inputs:
+  key:
+    description: 'Key for the cache'
+    required: true
+
+outputs:
+  cache-hit:
+    description: 'Indictaes if the cache hit or not'
+  cache-primary-key:
+    description: 'The cache key'
+
+runs:
+  using: 'composite'
+  steps:
+  - name: cache/restore action
+    id: cache-conan
+    uses: actions/cache/restore@v3
+    with:
+      path: ./conan_cache.tgz
+      key: ${{ inputs.key }}
+
+  - name: conan cache restore
+    if: ${{ steps.cache-conan.outputs.cache-hit }}
+    shell: bash
+    run: |
+      conan cache restore conan_cache.tgz
+
+      echo "cache-hit=${{ steps.cache-conan.outputs.cache-hit }}" >> $GITHUB_OUTPUT
+      echo "cache-primary-key=${{ steps.cache-conan.outputs.cache-primary-key }}" >> $GITHUB_OUTPUT
