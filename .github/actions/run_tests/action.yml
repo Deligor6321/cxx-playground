@@ -8,16 +8,14 @@ inputs:
 
 runs:
   using: 'composite'
-
-  env:
-    BUILD_TYPE: Release
-    CONAN_VERSION: 2.0.14
-
   steps:
-  - name: Setup build options (Linux)
-    if: ${{ runner.os == 'Linux' }}
+  - name: Setup env
     shell: bash
     run: |
+      echo "CONAN_VERSION=2.0.14" >> $GITHUB_ENV
+
+      echo "BUILD_TYPE=Release" >> $GITHUB_ENV
+
       echo "CMAKE_CONFIG_PRESET=conan-release" >> $GITHUB_ENV
       echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
       echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
@@ -27,16 +25,6 @@ runs:
     shell: bash
     run: |
       echo "CMAKE_CONFIG_PRESET=conan-default" >> $GITHUB_ENV
-      echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
-      echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
-
-  - name: Setup build options (macOS)
-    if: ${{ runner.os == 'macOS' }}
-    shell: bash
-    run: |
-      echo "CMAKE_CONFIG_PRESET=conan-release" >> $GITHUB_ENV
-      echo "CMAKE_BUILD_PRESET=conan-release" >> $GITHUB_ENV
-      echo "CMAKE_TEST_PRESET=conan-release" >> $GITHUB_ENV
 
   - name: Install and configure conan
     shell: bash
