@@ -10,6 +10,9 @@ jobs:
   build_and_run_tests:
     runs-on: [ubuntu-22.04]
 
+    env:
+      CONAN_VERSION: 2.0.14
+
     steps:
     - uses: actions/checkout@v3
 
@@ -22,7 +25,7 @@ jobs:
     - name: Configure runner
       shell: bash
       run: |
-        pip install conan
+        pip install conan==${{ env.CONAN_VERSION }}
         conan --version
         conan profile detect --force --name base
         cp conan/profiles/gcc-13 $(dirname $(conan profile path base))/default

@@ -12,6 +12,7 @@ jobs:
 
     env:
       DEVELOPER_DIR: /Applications/Xcode_15.0.1.app/Contents/Developer
+      CONAN_VERSION: 2.0.14
 
     steps:
     - uses: actions/checkout@v3
@@ -19,7 +20,7 @@ jobs:
     - name: Configure runner
       shell: bash
       run: |
-        pip3 install conan
+        pip3 install conan==${{ env.CONAN_VERSION }}
         conan --version
         conan profile detect --force --name base
         cp conan/profiles/apple-clang-15 $(dirname $(conan profile path base))/default

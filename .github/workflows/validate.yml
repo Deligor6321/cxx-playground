@@ -11,7 +11,10 @@ jobs:
     runs-on: [ubuntu-22.04]
 
     env:
-      LLVM_VERSION: "16.0"
+      LLVM_VERSION: 16.0
+      CONAN_VERSION: 2.0.14
+      CLANG_FORMAT_VERSION: 16.0.6
+      CLANG_TIDY_VERSION: 17.0.1
 
     steps:
     - uses: actions/checkout@v3
@@ -34,10 +37,10 @@ jobs:
     - name: Install pipx packages
       shell: bash
       run: |
-        pipx install conan
+        pipx install conan==${{ env.CONAN_VERSION }}
         pipx install cpplint
-        pipx install clang-format==16.0.6
-        pipx install clang-tidy==17.0.1
+        pipx install clang-format==${{ env.CLANG_FORMAT_VERSION }}
+        pipx install clang-tidy==${{ env.CLANG_TIDY_VERSION }}
         echo $(pipx environment --value PIPX_BIN_DIR) >> $GITHUB_PATH
 
     - name: Configure conan
@@ -46,13 +49,24 @@ jobs:
         conan profile detect --force --name base
         cp conan/profiles/clang-16 $(dirname $(conan profile path base))/default
 
+    - name: Cache conan
+      id: cache-conan
+      uses: actions/cache@v3
+      with:
+        path: |
+          ./conan_cache.tgz
+        key: ${{ runner.os }}-${{ runner.arch }}__conan-${{ env.CONAN_VERSION }}__${{ hashFiles('./.github/workflows/cfg/tools_conanfile.txt,./conanfile.py') }}
+
+    - name: Restore conan cache
+      if: ${{ steps.cache-conan.outputs.cache-hit }}
+      shell: bash
+      run: |
+        conan cache restore conan_cache.tgz
+
     - name: Install conan packages
       shell: bash
       run: |
-        conan install \
-          --tool-requires "cmake/3.27.7" \
-          --tool-requires "ninja/1.11.1" \
-          --tool-requires "cppcheck/2.12.1" \
+        conan install ./.github/workflows/cfg/tools_conanfile.txt
           --output-folder=./pkgs \
           --build=missing
 
@@ -61,4 +75,10 @@ jobs:
       run: |
         source ./pkgs/conanbuild.sh
         make -k validate
+
+    - name: Save conan cache
+      if: ${{ !steps.cache-conan.outputs.cache-hit }}
+      shell: bash
+      run: |
+        conan cache save "*/*:*" --file=conan_cache.tgz
 
