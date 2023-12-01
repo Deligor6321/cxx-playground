@@ -25,10 +25,9 @@ enable_testing()
 
 find_package(Microsoft.GSL CONFIG REQUIRED)
 
-add_library(dlgr STATIC)
-target_sources(dlgr PUBLIC include/dlgr/enum_flags.h include/dlgr/ring.h src/dummy.cc)
-target_include_directories(dlgr PUBLIC include)
-target_link_libraries(dlgr PUBLIC Microsoft.GSL::GSL)
+add_library(dlgr INTERFACE)
+target_include_directories(dlgr INTERFACE include)
+target_link_libraries(dlgr INTERFACE Microsoft.GSL::GSL)
 
 add_subdirectory(benchmarks)
 add_subdirectory(tests)

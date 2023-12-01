@@ -89,12 +89,12 @@ help :
 	@echo ""
 	@echo "Build targets: $(foreach _build_target,$(BUILD_TARGETS),$(_build_target))"
 
-all : init $(foreach _build_target, $(BUILD_TARGETS), build-$(_build_target))
+all : init $(foreach _build_type, $(BUILD_TYPES), build-$(_build_type))
 
 init : $(CONAN_CMAKE_PRESETS_FILE) $(ROOT_DIR)/$(COMPILE_COMMANDS)
 
 compile-commands $(ROOT_DIR)/$(COMPILE_COMMANDS) : $(BUILD_DIR_$(DEFAULT_BUILD_TYPE))/$(COMPILE_COMMANDS)
-	cp $(BUILD_DIR_$(DEFAULT_BUILD_TYPE))/$(COMPILE_COMMANDS) $(ROOT_DIR)/$(COMPILE_COMMANDS)
+	compdb -p $(BUILD_DIR_$(DEFAULT_BUILD_TYPE))/ list > $(ROOT_DIR)/$(COMPILE_COMMANDS)
 
 define INSTALL_DEPS_RULE
 $(BUILD_DIR_$(1))/$(CONAN_INSTALL_PRODUCT) : $(CONANFILE)
