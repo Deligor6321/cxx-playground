@@ -41,7 +41,7 @@ jobs:
         pipx install cpplint
         pipx install clang-format==${{ env.CLANG_FORMAT_VERSION }}
         pipx install clang-tidy==${{ env.CLANG_TIDY_VERSION }}
-        echo $(pipx environment --value PIPX_BIN_DIR) >> $GITHUB_PATH
+        pipx environment --value PIPX_BIN_DIR >> $GITHUB_PATH
 
     - name: Configure conan
       shell: bash

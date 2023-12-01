@@ -42,13 +42,14 @@ CMAKE_TEST_PRESET_debug := conan-debug
 CONAN_BUILD_TYPE_release := Release
 CONAN_BUILD_TYPE_debug := Debug
 TARGET_SUBDIR_benchmarks := benchmarks
+VALIDATE_RULES := cppcheck clang-format clang-tidy cpplint # TODO(improve): Add iwyu
 define TARGET_SUBDIR_TESTS_DEF
 TARGET_SUBDIR_$(1) := tests
 endef
 $(foreach _test_target, $(TEST_TARGETS), \
 	$(eval $(call TARGET_SUBDIR_TESTS_DEF,$(_test_target))))
 
-.PHONY : help init compile-commands clean install-deps config build test \
+.PHONY: help init compile-commands clean install-deps config build test all \
 	iwyu cppcheck clang-format clang-tidy cpplint validate \
 	$(foreach _build_target, $(BUILD_TARGETS), launch-$(_build_target)) \
 	$(foreach _build_target, $(BUILD_TARGETS), build-$(_build_target)) \
@@ -68,6 +69,13 @@ help :
 	@echo "  config                  configure project with default build type"
 	@echo "  build                   build all targets with default build type"
 	@echo "  test                    run all tests with default build type"
+	@echo "  all                     init and build all targets for each build type"
+	@echo "  iwyu                    run include-what-you-use tool"
+	@echo "  cppcheck                run cppcheck tool"
+	@echo "  clang-format            run clang-format tool"
+	@echo "  clang-tidy              run clang-tidy tool"
+	@echo "  cpplint                 run cpplint tool"
+	@echo "  validate                run all validation tools: $(VALIDATE_RULES)"
 	@echo "  launch-{target}         run specific target with default build type"
 	@echo "  build-{target}          build specific target with default build type"
 	@echo "  config-{type}           configure project with specific build type"
@@ -80,6 +88,8 @@ help :
 	@echo "Default build type: $(DEFAULT_BUILD_TYPE)"
 	@echo ""
 	@echo "Build targets: $(foreach _build_target,$(BUILD_TARGETS),$(_build_target))"
+
+all : init $(foreach _build_target, $(BUILD_TARGETS), build-$(_build_target))
 
 init : $(CONAN_CMAKE_PRESETS_FILE) $(ROOT_DIR)/$(COMPILE_COMMANDS)
 
@@ -186,10 +196,9 @@ clang-tidy : $(ROOT_DIR)/$(COMPILE_COMMANDS)
 cpplint :
 	cpplint $(SRC_FILES)
 
-# TODO(improve): Add iwyu
-validate : cppcheck clang-format clang-tidy cpplint
+validate : $(VALIDATE_RULES)
 
-clean:
+clean :
 	rm -f $(CONAN_CMAKE_PRESETS_FILE)
 	rm -f $(ROOT_DIR)/$(COMPILE_COMMANDS)
 	rm -rf $(BUILD_DIR)
