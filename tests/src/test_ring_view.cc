@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-#include <dlgr/ring.h>
+#include <dlgr/ring_view.h>
 
 namespace {
 

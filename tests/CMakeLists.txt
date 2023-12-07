@@ -3,7 +3,7 @@ project("${CMAKE_PROJECT_NAME}_tests" CXX)
 
 find_package(Catch2 3 REQUIRED)
 
-set(TESTS_SRC src/test_ring.cc src/test_enum_flags.cc)
+set(TESTS_SRC src/test_ring_view.cc src/test_enum_flags.cc)
 
 set(ASan_FLAGS -fsanitize=address -fno-omit-frame-pointer -g)
 set(MSan_FLAGS -fsanitize=memory -fno-omit-frame-pointer -g)
