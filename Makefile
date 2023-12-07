@@ -42,7 +42,7 @@ CMAKE_TEST_PRESET_debug := conan-debug
 CONAN_BUILD_TYPE_release := Release
 CONAN_BUILD_TYPE_debug := Debug
 TARGET_SUBDIR_benchmarks := benchmarks
-VALIDATE_RULES := cppcheck clang-format clang-tidy cpplint # TODO(improve): Add iwyu
+VALIDATE_RULES := cppcheck clang-format clang-tidy cpplint
 define TARGET_SUBDIR_TESTS_DEF
 TARGET_SUBDIR_$(1) := tests
 endef
@@ -50,7 +50,7 @@ $(foreach _test_target, $(TEST_TARGETS), \
 	$(eval $(call TARGET_SUBDIR_TESTS_DEF,$(_test_target))))
 
 .PHONY: help init compile-commands clean install-deps config build test all \
-	iwyu cppcheck clang-format clang-tidy cpplint validate \
+	cppcheck clang-format clang-tidy cpplint validate \
 	$(foreach _build_target, $(BUILD_TARGETS), launch-$(_build_target)) \
 	$(foreach _build_target, $(BUILD_TARGETS), build-$(_build_target)) \
 	$(foreach _build_type, $(BUILD_TYPES), config-$(_build_type)) \
@@ -70,7 +70,6 @@ help :
 	@echo "  build                   build all targets with default build type"
 	@echo "  test                    run all tests with default build type"
 	@echo "  all                     init and build all targets for each build type"
-	@echo "  iwyu                    run include-what-you-use tool"
 	@echo "  cppcheck                run cppcheck tool"
 	@echo "  clang-format            run clang-format tool"
 	@echo "  clang-tidy              run clang-tidy tool"
@@ -174,15 +173,12 @@ $(foreach _build_type, $(BUILD_TYPES), \
 
 test-fast : test-fast-$(DEFAULT_BUILD_TYPE)
 
-iwyu : $(ROOT_DIR)/$(COMPILE_COMMANDS)
-	iwyu_tool.py -p $(ROOT_DIR) -- -Xiwyu --mapping_file=$(ROOT_DIR)/tools/iwyu/libcxx.imp
-
-cppcheck : $(ROOT_DIR)/$(COMPILE_COMMANDS)
+cppcheck : $(BUILD_DIR_$(DEFAULT_BUILD_TYPE))/$(COMPILE_COMMANDS)
 	mkdir -p $(BUILD_DIR)/cppcheck
 	cppcheck -v --error-exitcode=1 -j $(N_JOBS) --check-level=exhaustive \
 		--cppcheck-build-dir=$(BUILD_DIR)/cppcheck \
 		--checkers-report=$(BUILD_DIR)/cppcheck_report.txt \
-		--project=$(ROOT_DIR)/$(COMPILE_COMMANDS) \
+		--project=$(BUILD_DIR_$(DEFAULT_BUILD_TYPE))/$(COMPILE_COMMANDS) \
 		--enable=all --addon=threadsafety --addon=findcasts --addon=misc --addon=naming.json \
 		--suppress=unmatchedSuppression --suppress=missingIncludeSystem --suppress=unusedFunction \
 		--inline-suppr --suppressions-list=$(ROOT_DIR)/cppcheck-suppressions.txt
@@ -190,8 +186,8 @@ cppcheck : $(ROOT_DIR)/$(COMPILE_COMMANDS)
 clang-format :
 	clang-format -n --Werror $(SRC_FILES)
 
-clang-tidy : $(ROOT_DIR)/$(COMPILE_COMMANDS)
-	run-clang-tidy -p $(ROOT_DIR)
+clang-tidy : $(BUILD_DIR_$(DEFAULT_BUILD_TYPE))/$(COMPILE_COMMANDS)
+	run-clang-tidy -p $(BUILD_DIR_$(DEFAULT_BUILD_TYPE))
 
 cpplint :
 	cpplint $(SRC_FILES)
