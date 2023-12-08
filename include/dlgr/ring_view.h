@@ -548,6 +548,6 @@ ring(BoundType) -> ring<ranges::ring_view_bound_t>;
 
 // TODO(compiler): Replace GSL_ASSUME with assume attribute
 
-// TODO(improve): reverse, borrow, non-common range?, noexcept, guarantees
+// TODO(improve): borrow, non-common range?, noexcept, guarantees
 
 }  // namespace dlgr

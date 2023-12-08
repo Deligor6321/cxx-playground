@@ -3,6 +3,7 @@ Checks: >
   *,
   -altera-*,-fuchsia-*,-zircon-*,-llvmlibc-*,-llvm-header-guard,
   -cppcoreguidelines-missing-std-forward,-misc-const-correctness,
+  -cppcoreguidelines-avoid-do-while,
 WarningsAsErrors: '*'
 HeaderFilterRegex: 'dlgr/.*'
 FormatStyle: none
