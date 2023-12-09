@@ -118,6 +118,7 @@ TEST_CASE("ring_view for vector", "[ring_view]") {  // cppcheck-suppress[naming-
 
     CHECK(!nums.empty());
     CHECK(nums.size() == 10);
+    CHECK((nums.end() - nums.begin()) == 10);
     CHECK(to_vector(nums) == std::vector<int>{27, 24, 23, 11, 0, 27, 24, 23, 11, 0});
   }
 }
@@ -138,6 +139,24 @@ TEST_CASE("ring_view for list", "[ring_view]") {  // cppcheck-suppress[naming-fu
 
     CHECK(to_vector(nums) == std::vector<int>{0, 11, 23, 24, 27, 0, 11, 23, 24});
   }
+
+  SECTION("bound = 2") {
+    auto nums = ring_view(lst, 2);
+
+    constexpr auto checks = check_range_concepts_config<int>{
+        .range_type = range_type::bidirectional_range,
+        .is_viewable_range = true,
+        .is_common_range = true,
+        .is_output_range = true,
+        .is_sized_range = true,
+    };
+    check_range_concepts<checks>(nums);
+    check_iterator_category<std::bidirectional_iterator_tag>(nums);
+
+    CHECK(!nums.empty());
+    CHECK(nums.size() == 10);
+    CHECK(to_vector(nums) == std::vector<int>{0, 11, 23, 24, 27, 0, 11, 23, 24, 27});
+  }
 }
 
 TEST_CASE("ring_view for forward_list", "[ring_view]") {  // cppcheck-suppress[naming-functionName]
@@ -155,6 +174,22 @@ TEST_CASE("ring_view for forward_list", "[ring_view]") {  // cppcheck-suppress[n
     check_iterator_category<std::input_iterator_tag>(nums);
 
     CHECK(to_vector(nums) == std::vector<int>{27, 0, 11, 23, 24, 27, 0, 11, 23, 24, 27, 0, 11});
+  }
+
+  SECTION("bound = 0") {
+    auto nums = std::views::all(flst) | ring(0);
+
+    constexpr auto checks = check_range_concepts_config<int>{
+        .range_type = range_type::forward_range,
+        .is_viewable_range = true,
+        .is_common_range = true,
+        .is_output_range = true,
+    };
+    check_range_concepts<checks>(nums);
+    check_iterator_category<std::forward_iterator_tag>(nums);
+
+    CHECK(nums.empty());
+    CHECK(to_vector(nums) == std::vector<int>{});
   }
 }
 
@@ -174,6 +209,25 @@ TEST_CASE("ring_view for string", "[ring_view]") {  // cppcheck-suppress[naming-
 
     CHECK(to_vector(chars) == std::vector<char>{'a', 'b', 'c', 'x', 'a', 'b', 'c'});
   }
+
+  SECTION("bound = 1") {
+    auto chars = std::views::all(str) | ring(1);
+
+    constexpr auto checks = check_range_concepts_config<int>{
+        .range_type = range_type::random_access_range,
+        .is_viewable_range = true,
+        .is_common_range = true,
+        .is_output_range = true,
+        .is_sized_range = true,
+    };
+    check_range_concepts<checks>(chars);
+    check_iterator_category<std::random_access_iterator_tag>(chars);
+
+    CHECK(!chars.empty());
+    CHECK(chars.size() == 4);
+    CHECK((chars.end() - chars.begin()) == 4);
+    CHECK(to_vector(chars) == std::vector<char>{'a', 'b', 'c', 'x'});
+  }
 }
 
 TEST_CASE("ring_view for empty string_view",
@@ -190,6 +244,24 @@ TEST_CASE("ring_view for empty string_view",
     check_range_concepts<checks>(chars);
     check_iterator_category<std::input_iterator_tag>(chars);
 
+    CHECK(to_vector(chars) == std::vector<char>{});
+  }
+
+  SECTION("bound = 100'000") {
+    auto chars = std::views::all(empt) | ring(100'000);
+
+    constexpr auto checks = check_range_concepts_config<int>{
+        .range_type = range_type::random_access_range,
+        .is_viewable_range = true,
+        .is_common_range = true,
+        .is_sized_range = true,
+    };
+    check_range_concepts<checks>(chars);
+    check_iterator_category<std::random_access_iterator_tag>(chars);
+
+    CHECK(chars.empty());
+    CHECK(chars.size() == 0);
+    CHECK((chars.end() - chars.begin()) == 0);
     CHECK(to_vector(chars) == std::vector<char>{});
   }
 }
@@ -296,6 +368,6 @@ TEST_CASE("ring_view output range", "[ring_view]") {  // cppcheck-suppress[namin
 }
 
 // TODO(tests): deduction guides, more bounded tests, other std views and algorithms,
-// kv-containers
+// kv-containers, iterator/sentinel concepts, big bounds, out of range
 
 // NOLINTEND

@@ -97,7 +97,7 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
         /* curr  */ base_begin,
         /* begin */ base_begin,
         /* end   */ base_end,
-        /* pos   */ bound_,
+        /* pos   */ base_begin != base_end ? bound_ : bound_type{},
     };
   }
 
@@ -110,7 +110,7 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
         /* curr  */ base_begin,
         /* begin */ base_begin,
         /* end   */ base_end,
-        /* pos   */ bound_,
+        /* pos   */ base_begin != base_end ? bound_ : bound_type{},
     };
   }
 
@@ -118,6 +118,40 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
     requires(is_unbounded_)
   {
     return {};
+  }
+
+  [[nodiscard]] constexpr auto size() const
+    requires(!is_unbounded_ && std::ranges::sized_range<const base_type>)
+  {
+    return bound_ * std::ranges::size(base_);
+  }
+
+  [[nodiscard]] constexpr auto size()
+    requires(!is_unbounded_ && std::ranges::sized_range<base_type>)
+  {
+    return bound_ * std::ranges::size(base_);
+  }
+
+  [[nodiscard]] constexpr auto empty() const -> bool
+    requires requires(const base_type& base) { std::ranges::empty(base); }
+  {
+    if constexpr (!is_unbounded_) {
+      if (bound_ == bound_type{}) {
+        return true;
+      }
+    }
+    return std::ranges::empty(base_);
+  }
+
+  [[nodiscard]] constexpr auto empty() -> bool
+    requires requires(base_type& base) { std::ranges::empty(base); }
+  {
+    if constexpr (!is_unbounded_) {
+      if (bound_ == bound_type{}) {
+        return true;
+      }
+    }
+    return std::ranges::empty(base_);
   }
 
   // -- Base access
@@ -136,9 +170,9 @@ class ring_view : public std::ranges::view_interface<ring_view<RangeType, BoundT
   constexpr auto validate() const
       noexcept(is_unbounded_ || !std::ranges::random_access_range<base_type>) -> void {
     if constexpr (!is_unbounded_ && std::ranges::random_access_range<base_type>) {
-      auto size = std::ranges::size(base_);
-      if (size != 0
-          && bound_ > static_cast<bound_type>(std::numeric_limits<decltype(size)>::max() / size)) {
+      const auto base_size = std::ranges::size(base_);
+      constexpr auto max_size = std::numeric_limits<decltype(base_size)>::max();
+      if (base_size != 0 && bound_ > static_cast<bound_type>(max_size / base_size)) {
         // cppcheck-suppress[throwInNoexceptFunction]: Conditional noexcept is ok
         throw std::overflow_error("bound overflow");
       }
@@ -548,6 +582,6 @@ ring(BoundType) -> ring<ranges::ring_view_bound_t>;
 
 // TODO(compiler): Replace GSL_ASSUME with assume attribute
 
-// TODO(improve): borrow, non-common range?, noexcept, guarantees
+// TODO(improve): borrow, non-common range?, noexcept, reverse unbounded, guarantees
 
 }  // namespace dlgr
