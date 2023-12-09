@@ -453,7 +453,8 @@ class ring_view<RangeType, BoundType>::iterator {
       const auto div_mod = std::div(diff - to_end, len);
       if constexpr (!is_unbounded_) {
         GSL_ASSUME(div_mod.quot >= 0);
-        Expects(pos_ <= std::numeric_limits<bound_type>::max() - div_mod.quot);
+        constexpr auto bound_max = std::numeric_limits<bound_type>::max();
+        Expects(pos_ <= bound_max - static_cast<bound_type>(div_mod.quot));
         pos_ += static_cast<bound_type>(div_mod.quot);
       }
       GSL_ASSUME(div_mod.rem >= 0);
@@ -480,7 +481,8 @@ class ring_view<RangeType, BoundType>::iterator {
       const auto div_mod = std::div(diff - to_rend, len);
       if constexpr (!is_unbounded_) {
         GSL_ASSUME(div_mod.quot >= 0);
-        Expects(pos_ <= std::numeric_limits<bound_type>::max() - div_mod.quot);
+        constexpr auto bound_max = std::numeric_limits<bound_type>::max();
+        Expects(pos_ <= bound_max - static_cast<bound_type>(div_mod.quot));
         pos_ -= static_cast<bound_type>(div_mod.quot);
       }
       GSL_ASSUME(div_mod.rem >= 0);
