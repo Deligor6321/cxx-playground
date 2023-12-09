@@ -1,4 +1,3 @@
-
 // Copyright 2023 Deligor <deligor6321@gmail.com>
 
 #include <catch2/catch_test_macros.hpp>
@@ -89,378 +88,387 @@ constexpr auto static_check_iterator_category(auto&& range) -> void {
 
 // NOLINTBEGIN
 TEST_CASE("ring_view for vector", "[ring_view]") {  // cppcheck-suppress[naming-functionName]
-  const auto vec = std::vector<int>{0, 11, 23, 24, 27};
+  const auto init = std::vector{0, 11, 23, 24, 27};
+  using value_type = decltype(init)::value_type;
 
   SECTION("all -> reverse -> ring(unbounded)") {
-    auto nums = std::views::all(vec) | std::views::reverse | ring();
+    auto rng = std::views::all(init) | std::views::reverse | ring();
 
-    constexpr auto checks = check_range_concepts_config<int>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::input_range,
         .is_viewable_range = true,
     };
-    static_check_range_concepts<checks>(nums);
-    static_check_iterator_category<std::input_iterator_tag>(nums);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(!nums.empty());
+    CHECK(!rng.empty());
 
     SECTION("-> take") {
-      auto nums2 = nums | std::views::take(11);
+      auto rng2 = rng | std::views::take(11);
 
-      static_check_range_concepts<checks>(nums2);
-      static_check_iterator_category<std::input_iterator_tag>(nums2);
+      static_check_range_concepts<checks>(rng2);
+      static_check_iterator_category<std::input_iterator_tag>(rng2);
 
-      CHECK(to_vector(nums2) == std::vector<int>{27, 24, 23, 11, 0, 27, 24, 23, 11, 0, 27});
+      CHECK(to_vector(rng2) == std::vector<value_type>{27, 24, 23, 11, 0, 27, 24, 23, 11, 0, 27});
     }
   }
 
   SECTION("all -> ring(bound = 2)") {
-    auto nums = ring_view(vec, 2);
+    auto rng = ring_view(init, 2);
 
-    constexpr auto checks = check_range_concepts_config<int>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::random_access_range,
         .is_viewable_range = true,
         .is_common_range = true,
         .is_sized_range = true,
     };
-    static_check_range_concepts<checks>(nums);
-    static_check_iterator_category<std::random_access_iterator_tag>(nums);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(!nums.empty());
-    CHECK(nums.size() == 10);
-    CHECK((nums.end() - nums.begin()) == 10);
-    CHECK(to_vector(nums) == std::vector<int>{0, 11, 23, 24, 27, 0, 11, 23, 24, 27});
+    CHECK(!rng.empty());
+    CHECK(rng.size() == 10);
+    CHECK((rng.end() - rng.begin()) == 10);
+    CHECK(to_vector(rng) == std::vector<value_type>{0, 11, 23, 24, 27, 0, 11, 23, 24, 27});
 
     SECTION(" -> reverse") {
-      auto nums2 = nums | std::views::reverse;
+      auto rng2 = rng | std::views::reverse;
 
-      static_check_range_concepts<checks>(nums2);
-      static_check_iterator_category<std::random_access_iterator_tag>(nums2);
+      static_check_range_concepts<checks>(rng2);
+      static_check_iterator_category<std::random_access_iterator_tag>(rng2);
 
-      CHECK(!nums2.empty());
-      CHECK(nums2.size() == 10);
-      CHECK((nums2.end() - nums2.begin()) == 10);
-      CHECK(to_vector(nums2) == std::vector<int>{27, 24, 23, 11, 0, 27, 24, 23, 11, 0});
+      CHECK(!rng2.empty());
+      CHECK(rng2.size() == 10);
+      CHECK((rng2.end() - rng2.begin()) == 10);
+      CHECK(to_vector(rng2) == std::vector<value_type>{27, 24, 23, 11, 0, 27, 24, 23, 11, 0});
     }
   }
 }
 
 TEST_CASE("ring_view for list", "[ring_view]") {  // cppcheck-suppress[naming-functionName]
-  auto lst = std::list<int>{0, 11, 23, 24, 27};
+  auto init = std::list{0, 11, 23, 24, 27};
+  using value_type = decltype(init)::value_type;
 
   SECTION("all -> ring(unbounded)") {
-    auto nums = ring_view(lst);
+    auto rng = ring_view(init);
 
-    constexpr auto checks = check_range_concepts_config<int>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
-    static_check_range_concepts<checks>(nums);
-    static_check_iterator_category<std::input_iterator_tag>(nums);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(!nums.empty());
+    CHECK(!rng.empty());
 
     SECTION("-> take") {
-      auto nums2 = nums | std::views::take(9);
+      auto rng2 = rng | std::views::take(9);
 
-      static_check_range_concepts<checks>(nums2);
-      static_check_iterator_category<std::input_iterator_tag>(nums2);
+      static_check_range_concepts<checks>(rng2);
+      static_check_iterator_category<std::input_iterator_tag>(rng2);
 
-      CHECK(to_vector(nums2) == std::vector<int>{0, 11, 23, 24, 27, 0, 11, 23, 24});
+      CHECK(to_vector(rng2) == std::vector<value_type>{0, 11, 23, 24, 27, 0, 11, 23, 24});
     }
   }
 
   SECTION("all -> ring(bound = 2)") {
-    auto nums = ring_view(lst, 2);
+    auto rng = ring_view(init, 2);
 
-    constexpr auto checks = check_range_concepts_config<int>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::bidirectional_range,
         .is_viewable_range = true,
         .is_common_range = true,
         .is_output_range = true,
         .is_sized_range = true,
     };
-    static_check_range_concepts<checks>(nums);
-    static_check_iterator_category<std::bidirectional_iterator_tag>(nums);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::bidirectional_iterator_tag>(rng);
 
-    CHECK(!nums.empty());
-    CHECK(nums.size() == 10);
-    CHECK(to_vector(nums) == std::vector<int>{0, 11, 23, 24, 27, 0, 11, 23, 24, 27});
+    CHECK(!rng.empty());
+    CHECK(rng.size() == 10);
+    CHECK(to_vector(rng) == std::vector<value_type>{0, 11, 23, 24, 27, 0, 11, 23, 24, 27});
   }
 }
 
 TEST_CASE("ring_view for forward_list", "[ring_view]") {  // cppcheck-suppress[naming-functionName]
-  auto flst = std::forward_list<int>{0, 11, 23, 24, 27};
+  auto init = std::forward_list{0, 11, 23, 24, 27};
+  using value_type = decltype(init)::value_type;
 
   SECTION("all -> ring(unbounded)") {
-    auto nums = std::views::all(flst) | ring();
+    auto rng = std::views::all(init) | ring();
 
-    constexpr auto checks = check_range_concepts_config<int>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
-    static_check_range_concepts<checks>(nums);
-    static_check_iterator_category<std::input_iterator_tag>(nums);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(!nums.empty());
+    CHECK(!rng.empty());
 
     SECTION("-> take -> drop") {
-      auto nums2 = nums | std::views::take(17) | std::views::drop(4);
+      auto rng2 = rng | std::views::take(17) | std::views::drop(4);
 
-      static_check_range_concepts<checks>(nums2);
-      static_check_iterator_category<std::input_iterator_tag>(nums2);
+      static_check_range_concepts<checks>(rng2);
+      static_check_iterator_category<std::input_iterator_tag>(rng2);
 
-      CHECK(to_vector(nums2) == std::vector<int>{27, 0, 11, 23, 24, 27, 0, 11, 23, 24, 27, 0, 11});
+      CHECK(to_vector(rng2)
+            == std::vector<value_type>{27, 0, 11, 23, 24, 27, 0, 11, 23, 24, 27, 0, 11});
     }
   }
 
   SECTION("all -> ring(bound = 0)") {
-    auto nums = std::views::all(flst) | ring(0);
+    auto rng = std::views::all(init) | ring(0);
 
-    constexpr auto checks = check_range_concepts_config<int>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::forward_range,
         .is_viewable_range = true,
         .is_common_range = true,
         .is_output_range = true,
     };
-    static_check_range_concepts<checks>(nums);
-    static_check_iterator_category<std::forward_iterator_tag>(nums);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::forward_iterator_tag>(rng);
 
-    CHECK(nums.empty());
-    CHECK(to_vector(nums) == std::vector<int>{});
+    CHECK(rng.empty());
+    CHECK(to_vector(rng) == std::vector<value_type>{});
   }
 }
 
 TEST_CASE("ring_view for string", "[ring_view]") {  // cppcheck-suppress[naming-functionName]
   auto str = std::string("abcx");
+  using value_type = decltype(str)::value_type;
 
   SECTION("all -> drop -> ring(unbounded)") {
-    auto chars = std::views::all(str) | std::views::drop(2) | ring();
+    auto rng = std::views::all(str) | std::views::drop(2) | ring();
 
-    constexpr auto checks = check_range_concepts_config<char>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
-    static_check_range_concepts<checks>(chars);
-    static_check_iterator_category<std::input_iterator_tag>(chars);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(!chars.empty());
+    CHECK(!rng.empty());
 
     SECTION("-> take") {
-      auto chars2 = chars | std::views::take(7);
+      auto rng2 = rng | std::views::take(7);
 
-      static_check_range_concepts<checks>(chars2);
-      static_check_iterator_category<std::input_iterator_tag>(chars2);
+      static_check_range_concepts<checks>(rng2);
+      static_check_iterator_category<std::input_iterator_tag>(rng2);
 
-      CHECK(to_vector(chars2) == std::vector<char>{'c', 'x', 'c', 'x', 'c', 'x', 'c'});
+      CHECK(to_vector(rng2) == std::vector<value_type>{'c', 'x', 'c', 'x', 'c', 'x', 'c'});
     }
   }
 
   SECTION("all -> take -> ring(bound = 1)") {
-    auto chars = std::views::all(str) | std::views::take(3) | ring(1);
+    auto rng = std::views::all(str) | std::views::take(3) | ring(1);
 
-    constexpr auto checks = check_range_concepts_config<int>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::random_access_range,
         .is_viewable_range = true,
         .is_common_range = true,
         .is_output_range = true,
         .is_sized_range = true,
     };
-    static_check_range_concepts<checks>(chars);
-    static_check_iterator_category<std::random_access_iterator_tag>(chars);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(!chars.empty());
-    CHECK(chars.size() == 3);
-    CHECK((chars.end() - chars.begin()) == 3);
-    CHECK(to_vector(chars) == std::vector<char>{'a', 'b', 'c'});
+    CHECK(!rng.empty());
+    CHECK(rng.size() == 3);
+    CHECK((rng.end() - rng.begin()) == 3);
+    CHECK(to_vector(rng) == std::vector<value_type>{'a', 'b', 'c'});
   }
 }
 
 TEST_CASE("ring_view for empty string_view",
           "[ring_view]") {  // cppcheck-suppress[naming-functionName]
-  auto empt = std::string_view("");
+  auto init = std::string_view("");
+  using value_type = decltype(init)::value_type;
 
   SECTION("all -> ring(unbounded)") {
-    auto chars = std::views::all(empt) | ring();
+    auto rng = std::views::all(init) | ring();
 
-    constexpr auto checks = check_range_concepts_config<char>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::input_range,
         .is_viewable_range = true,
     };
-    static_check_range_concepts<checks>(chars);
-    static_check_iterator_category<std::input_iterator_tag>(chars);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(chars.empty());
-    CHECK(to_vector(chars) == std::vector<char>{});
+    CHECK(rng.empty());
+    CHECK(to_vector(rng) == std::vector<value_type>{});
   }
 
   SECTION("all -> ring(100'000)") {
-    auto chars = std::views::all(empt) | ring(100'000);
+    auto rng = std::views::all(init) | ring(100'000);
 
-    constexpr auto checks = check_range_concepts_config<int>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::random_access_range,
         .is_viewable_range = true,
         .is_common_range = true,
         .is_sized_range = true,
     };
-    static_check_range_concepts<checks>(chars);
-    static_check_iterator_category<std::random_access_iterator_tag>(chars);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(chars.empty());
-    CHECK(chars.size() == 0);
-    CHECK((chars.end() - chars.begin()) == 0);
-    CHECK(to_vector(chars) == std::vector<char>{});
+    CHECK(rng.empty());
+    CHECK(rng.size() == 0);
+    CHECK((rng.end() - rng.begin()) == 0);
+    CHECK(to_vector(rng) == std::vector<value_type>{});
 
     SECTION("-> drop(1'000)") {
-      auto chars2 = chars | std::views::drop(1'000);
+      auto rng2 = rng | std::views::drop(1'000);
 
-      static_check_range_concepts<checks>(chars2);
-      static_check_iterator_category<std::random_access_iterator_tag>(chars2);
+      static_check_range_concepts<checks>(rng2);
+      static_check_iterator_category<std::random_access_iterator_tag>(rng2);
 
-      CHECK(chars2.empty());
-      CHECK(chars2.size() == 0);
-      CHECK((chars2.end() - chars2.begin()) == 0);
-      CHECK(to_vector(chars2) == std::vector<char>{});
+      CHECK(rng2.empty());
+      CHECK(rng2.size() == 0);
+      CHECK((rng2.end() - rng2.begin()) == 0);
+      CHECK(to_vector(rng2) == std::vector<value_type>{});
     }
   }
 }
 
 TEST_CASE("ring_view for empty_view", "[ring_view]") {  // cppcheck-suppress[naming-functionName]
-  auto empt = std::views::empty<char>;
+  using value_type = bool;
+  auto init = std::views::empty<value_type>;
 
   SECTION("empty -> ring(unbounded)") {
-    auto chars = empt | ring();
+    auto rng = init | ring();
 
-    constexpr auto checks = check_range_concepts_config<char>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
-    static_check_range_concepts<checks>(chars);
-    static_check_iterator_category<std::input_iterator_tag>(chars);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(chars.empty());
-    CHECK(to_vector(chars) == std::vector<char>{});
+    CHECK(rng.empty());
+    CHECK(to_vector(rng) == std::vector<value_type>{});
   }
 
   SECTION("empty -> ring(bound = 3)") {
-    auto chars = empt | ring(3);
+    auto rng = init | ring(3);
 
-    constexpr auto checks = check_range_concepts_config<int>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::random_access_range,
         .is_viewable_range = true,
         .is_common_range = true,
         .is_output_range = true,
         .is_sized_range = true,
     };
-    static_check_range_concepts<checks>(chars);
-    static_check_iterator_category<std::random_access_iterator_tag>(chars);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(chars.empty());
-    CHECK(chars.size() == 0);
-    CHECK((chars.end() - chars.begin()) == 0);
-    CHECK(to_vector(chars) == std::vector<char>{});
+    CHECK(rng.empty());
+    CHECK(rng.size() == 0);
+    CHECK((rng.end() - rng.begin()) == 0);
+    CHECK(to_vector(rng) == std::vector<value_type>{});
 
     SECTION("-> take") {
-      auto chars2 = chars | std::views::take(5);
+      auto rng2 = rng | std::views::take(5);
 
-      static_check_range_concepts<checks>(chars2);
-      static_check_iterator_category<std::random_access_iterator_tag>(chars2);
+      static_check_range_concepts<checks>(rng2);
+      static_check_iterator_category<std::random_access_iterator_tag>(rng2);
 
-      CHECK(chars2.empty());
-      CHECK(chars2.size() == 0);
-      CHECK((chars2.end() - chars2.begin()) == 0);
-      CHECK(to_vector(chars2) == std::vector<char>{});
+      CHECK(rng2.empty());
+      CHECK(rng2.size() == 0);
+      CHECK((rng2.end() - rng2.begin()) == 0);
+      CHECK(to_vector(rng2) == std::vector<value_type>{});
     }
   }
 }
 
 TEST_CASE("ring_view for single value", "[ring_view]") {  // cppcheck-suppress[naming-functionName]
-  auto dbl = 12.0;
+  auto init = 12.0;
+  using value_type = decltype(init);
 
   SECTION("single -> ring(unbounded)") {
-    auto dbls = std::views::single(dbl) | ring();
+    auto rng = std::views::single(init) | ring();
 
-    constexpr auto checks = check_range_concepts_config<double>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
-    static_check_range_concepts<checks>(dbls);
-    static_check_iterator_category<std::input_iterator_tag>(dbls);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(!dbls.empty());
+    CHECK(!rng.empty());
 
     SECTION("-> transform -> take") {
-      auto dbls2 = dbls | std::views::transform([n = 0](auto val) mutable { return ++n + val; })
-                   | std::views::take(5);
+      auto rng2 = rng | std::views::transform([n = 0](auto val) mutable { return ++n + val; })
+                  | std::views::take(5);
 
-      constexpr auto checks2 = check_range_concepts_config<double>{
+      constexpr auto checks2 = check_range_concepts_config<value_type>{
           .range_type = range_type::input_range,
           .is_viewable_range = true,
       };
-      static_check_range_concepts<checks2>(dbls2);
-      // static_check_iterator_category<std::input_iterator_tag>(dbls2);
+      static_check_range_concepts<checks2>(rng2);
+      // static_check_iterator_category<std::input_iterator_tag>(rng2);
 
-      CHECK(to_vector(dbls2) == std::vector<double>{13.0, 14.0, 15.0, 16.0, 17.0});
+      CHECK(to_vector(rng2) == std::vector<value_type>{13.0, 14.0, 15.0, 16.0, 17.0});
     }
   }
 
   SECTION("single -> ring(bound = 7)") {
-    auto dbls = std::ranges::single_view(dbl) | ring(7);
+    auto rng = std::ranges::single_view(init) | ring(7);
 
-    constexpr auto checks = check_range_concepts_config<double>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::random_access_range,
         .is_viewable_range = true,
         .is_output_range = true,
         .is_common_range = true,
         .is_sized_range = true,
     };
-    static_check_range_concepts<checks>(dbls);
-    static_check_iterator_category<std::random_access_iterator_tag>(dbls);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(!dbls.empty());
-    CHECK(dbls.size() == 7);
-    CHECK((dbls.end() - dbls.begin()) == 7);
-    CHECK(to_vector(dbls) == std::vector<double>{12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0});
+    CHECK(!rng.empty());
+    CHECK(rng.size() == 7);
+    CHECK((rng.end() - rng.begin()) == 7);
+    CHECK(to_vector(rng) == std::vector<value_type>{12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0});
 
     SECTION("-> transform") {
-      auto dbls2 = dbls | std::views::transform([n = 0](auto val) mutable { return ++n + val; });
+      auto rng2 = rng | std::views::transform([n = 0](auto val) mutable { return ++n + val; });
 
-      constexpr auto checks2 = check_range_concepts_config<double>{
+      constexpr auto checks2 = check_range_concepts_config<value_type>{
           .range_type = range_type::random_access_range,
           .is_viewable_range = true,
           .is_common_range = true,
           .is_sized_range = true,
       };
-      static_check_range_concepts<checks2>(dbls2);
-      // static_check_iterator_category<std::random_access_iterator_tag>(dbls2);
+      static_check_range_concepts<checks2>(rng2);
+      // static_check_iterator_category<std::random_access_iterator_tag>(rng2);
 
-      CHECK(!dbls2.empty());
-      CHECK(dbls2.size() == 7);
-      CHECK((dbls2.end() - dbls2.begin()) == 7);
-      CHECK(to_vector(dbls2) == std::vector<double>{13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0});
+      CHECK(!rng2.empty());
+      CHECK(rng2.size() == 7);
+      CHECK((rng2.end() - rng2.begin()) == 7);
+      CHECK(to_vector(rng2) == std::vector<value_type>{13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0});
     }
   }
 }
 
 TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-functionName]
-  auto deq = std::deque<int>{1, 3, 5, 7};
+  auto init = std::deque{1, 3, 5, 7};
+  using value_type = decltype(init)::value_type;
 
   SECTION("ref -> ring(unbounded)") {
-    auto nums = std::ranges::ref_view(deq) | ring();
+    auto rng = std::ranges::ref_view(init) | ring();
 
-    constexpr auto checks = check_range_concepts_config<int>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
-    static_check_range_concepts<checks>(nums);
-    static_check_iterator_category<std::input_iterator_tag>(nums);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    auto it = std::ranges::begin(nums);
+    auto it = std::ranges::begin(rng);
 
     it += 6;
     CHECK(*it == 5);
@@ -470,55 +478,69 @@ TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-f
     CHECK(*it == 7);
     CHECK(*(it - 15) == 1);
 
-    CHECK(!nums.empty());
+    CHECK(!rng.empty());
 
     SECTION("-> take") {
-      auto nums2 = nums | std::views::take(5);
+      auto rng2 = rng | std::views::take(5);
 
-      static_check_range_concepts<checks>(nums2);
-      static_check_iterator_category<std::input_iterator_tag>(nums2);
+      static_check_range_concepts<checks>(rng2);
+      static_check_iterator_category<std::input_iterator_tag>(rng2);
 
-      CHECK(to_vector(nums2) == std::vector<int>{1, 3, 5, 7, 1});
+      CHECK(to_vector(rng2) == std::vector<value_type>{1, 3, 5, 7, 1});
     }
   }
 
   SECTION("all -> drop -> ring(bound = 3)") {
-    auto nums = deq | std::views::drop(1) | ring(3);
+    auto rng = init | std::views::drop(1) | ring(3);
 
-    constexpr auto checks = check_range_concepts_config<int>{
+    constexpr auto checks = check_range_concepts_config<value_type>{
         .range_type = range_type::random_access_range,
         .is_viewable_range = true,
         .is_common_range = true,
         .is_output_range = true,
         .is_sized_range = true,
     };
-    static_check_range_concepts<checks>(nums);
-    static_check_iterator_category<std::random_access_iterator_tag>(nums);
+    static_check_range_concepts<checks>(rng);
+    static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(!nums.empty());
-    CHECK(nums.size() == 9);
-    CHECK((nums.end() - nums.begin()) == 9);
-    CHECK(to_vector(nums) == std::vector<int>{3, 5, 7, 3, 5, 7, 3, 5, 7});
+    CHECK(!rng.empty());
+    CHECK(rng.size() == 9);
+    CHECK((rng.end() - rng.begin()) == 9);
+    CHECK(to_vector(rng) == std::vector<value_type>{3, 5, 7, 3, 5, 7, 3, 5, 7});
+
+    SECTION("-> take -> drop") {
+      auto rng2 = rng | std::views::take(8) | std::views::drop(1);
+
+      static_check_range_concepts<checks>(rng2);
+      static_check_iterator_category<std::random_access_iterator_tag>(rng2);
+
+      CHECK(!rng2.empty());
+      CHECK(rng2.size() == 7);
+      CHECK((rng2.end() - rng2.begin()) == 7);
+      CHECK(to_vector(rng2) == std::vector<value_type>{5, 7, 3, 5, 7, 3, 5});
+    }
   }
 }
 
 TEST_CASE("ring_view output range", "[ring_view]") {  // cppcheck-suppress[naming-functionName]
-  auto vec = std::vector<std::size_t>{0, 1, 2, 3};
-  auto nums = vec | ring(2);
-  std::ranges::for_each(nums, [](auto& val) { ++val; });
+  auto init = std::vector<std::size_t>{0, 1, 2, 3};
+  using value_type = decltype(init)::value_type;
 
-  constexpr auto checks = check_range_concepts_config<int>{
+  auto rng = init | ring(2);
+  std::ranges::for_each(rng, [](auto& val) { ++val; });
+
+  constexpr auto checks = check_range_concepts_config<value_type>{
       .range_type = range_type::random_access_range,
       .is_viewable_range = true,
       .is_output_range = true,
       .is_common_range = true,
       .is_sized_range = true,
   };
-  static_check_range_concepts<checks>(nums);
-  static_check_iterator_category<std::random_access_iterator_tag>(nums);
+  static_check_range_concepts<checks>(rng);
+  static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-  CHECK(vec == std::vector<std::size_t>{2, 3, 4, 5});
-  CHECK(to_vector(nums) == std::vector<std::size_t>{2, 3, 4, 5, 2, 3, 4, 5});
+  CHECK(init == std::vector<value_type>{2, 3, 4, 5});
+  CHECK(to_vector(rng) == std::vector<value_type>{2, 3, 4, 5, 2, 3, 4, 5});
 }
 
 // TODO(tests): deduction guides, more bounded tests, other std views and algorithms,
