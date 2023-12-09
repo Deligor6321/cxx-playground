@@ -46,7 +46,7 @@ template <class ValueType>
 struct check_range_concepts_config {
   using value_type = ValueType;
 
-  range_type range_type = range_type::none;
+  range_type type = range_type::none;
   bool is_viewable_range = false;
   bool is_output_range = false;
   bool is_common_range = false;
@@ -58,11 +58,11 @@ constexpr auto static_check_range_concepts(auto&& range) -> void {
   using RangeType = decltype(range);
   using ValueType = typename decltype(Config)::value_type;
 
-  constexpr auto is_input_range = (Config.range_type >= range_type::input_range);
-  constexpr auto is_forward_range = (Config.range_type >= range_type::forward_range);
-  constexpr auto is_bidirectional_range = (Config.range_type >= range_type::bidirectional_range);
-  constexpr auto is_random_access_range = (Config.range_type >= range_type::random_access_range);
-  constexpr auto is_continuous_range = (Config.range_type >= range_type::contiguous_range);
+  constexpr auto is_input_range = (Config.type >= range_type::input_range);
+  constexpr auto is_forward_range = (Config.type >= range_type::forward_range);
+  constexpr auto is_bidirectional_range = (Config.type >= range_type::bidirectional_range);
+  constexpr auto is_random_access_range = (Config.type >= range_type::random_access_range);
+  constexpr auto is_continuous_range = (Config.type >= range_type::contiguous_range);
 
   STATIC_CHECK(std::ranges::input_range<RangeType> == is_input_range);
   STATIC_CHECK(std::ranges::forward_range<RangeType> == is_forward_range);
@@ -95,7 +95,7 @@ TEST_CASE("ring_view for vector", "[ring_view]") {  // cppcheck-suppress[naming-
     auto rng = std::views::all(init) | std::views::reverse | ring();
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::input_range,
+        .type = range_type::input_range,
         .is_viewable_range = true,
     };
     static_check_range_concepts<checks>(rng);
@@ -117,7 +117,7 @@ TEST_CASE("ring_view for vector", "[ring_view]") {  // cppcheck-suppress[naming-
     auto rng = ring_view(init, 2);
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::random_access_range,
+        .type = range_type::random_access_range,
         .is_viewable_range = true,
         .is_common_range = true,
         .is_sized_range = true,
@@ -152,7 +152,7 @@ TEST_CASE("ring_view for list", "[ring_view]") {  // cppcheck-suppress[naming-fu
     auto rng = ring_view(init);
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::input_range,
+        .type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
@@ -175,10 +175,10 @@ TEST_CASE("ring_view for list", "[ring_view]") {  // cppcheck-suppress[naming-fu
     auto rng = ring_view(init, 2);
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::bidirectional_range,
+        .type = range_type::bidirectional_range,
         .is_viewable_range = true,
-        .is_common_range = true,
         .is_output_range = true,
+        .is_common_range = true,
         .is_sized_range = true,
     };
     static_check_range_concepts<checks>(rng);
@@ -198,7 +198,7 @@ TEST_CASE("ring_view for forward_list", "[ring_view]") {  // cppcheck-suppress[n
     auto rng = std::views::all(init) | ring();
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::input_range,
+        .type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
@@ -222,10 +222,10 @@ TEST_CASE("ring_view for forward_list", "[ring_view]") {  // cppcheck-suppress[n
     auto rng = std::views::all(init) | ring(0);
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::forward_range,
+        .type = range_type::forward_range,
         .is_viewable_range = true,
-        .is_common_range = true,
         .is_output_range = true,
+        .is_common_range = true,
     };
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::forward_iterator_tag>(rng);
@@ -243,7 +243,7 @@ TEST_CASE("ring_view for string", "[ring_view]") {  // cppcheck-suppress[naming-
     auto rng = std::views::all(str) | std::views::drop(2) | ring();
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::input_range,
+        .type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
@@ -266,10 +266,10 @@ TEST_CASE("ring_view for string", "[ring_view]") {  // cppcheck-suppress[naming-
     auto rng = std::views::all(str) | std::views::take(3) | ring(1);
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::random_access_range,
+        .type = range_type::random_access_range,
         .is_viewable_range = true,
-        .is_common_range = true,
         .is_output_range = true,
+        .is_common_range = true,
         .is_sized_range = true,
     };
     static_check_range_concepts<checks>(rng);
@@ -291,7 +291,7 @@ TEST_CASE("ring_view for empty string_view",
     auto rng = std::views::all(init) | ring();
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::input_range,
+        .type = range_type::input_range,
         .is_viewable_range = true,
     };
     static_check_range_concepts<checks>(rng);
@@ -305,7 +305,7 @@ TEST_CASE("ring_view for empty string_view",
     auto rng = std::views::all(init) | ring(100'000);
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::random_access_range,
+        .type = range_type::random_access_range,
         .is_viewable_range = true,
         .is_common_range = true,
         .is_sized_range = true,
@@ -340,7 +340,7 @@ TEST_CASE("ring_view for empty_view", "[ring_view]") {  // cppcheck-suppress[nam
     auto rng = init | ring();
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::input_range,
+        .type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
@@ -355,10 +355,10 @@ TEST_CASE("ring_view for empty_view", "[ring_view]") {  // cppcheck-suppress[nam
     auto rng = init | ring(3);
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::random_access_range,
+        .type = range_type::random_access_range,
         .is_viewable_range = true,
-        .is_common_range = true,
         .is_output_range = true,
+        .is_common_range = true,
         .is_sized_range = true,
     };
     static_check_range_concepts<checks>(rng);
@@ -391,7 +391,7 @@ TEST_CASE("ring_view for single value", "[ring_view]") {  // cppcheck-suppress[n
     auto rng = std::views::single(init) | ring();
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::input_range,
+        .type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
@@ -405,7 +405,7 @@ TEST_CASE("ring_view for single value", "[ring_view]") {  // cppcheck-suppress[n
                   | std::views::take(5);
 
       constexpr auto checks2 = check_range_concepts_config<value_type>{
-          .range_type = range_type::input_range,
+          .type = range_type::input_range,
           .is_viewable_range = true,
       };
       static_check_range_concepts<checks2>(rng2);
@@ -419,7 +419,7 @@ TEST_CASE("ring_view for single value", "[ring_view]") {  // cppcheck-suppress[n
     auto rng = std::ranges::single_view(init) | ring(7);
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::random_access_range,
+        .type = range_type::random_access_range,
         .is_viewable_range = true,
         .is_output_range = true,
         .is_common_range = true,
@@ -437,7 +437,7 @@ TEST_CASE("ring_view for single value", "[ring_view]") {  // cppcheck-suppress[n
       auto rng2 = rng | std::views::transform([n = 0](auto val) mutable { return ++n + val; });
 
       constexpr auto checks2 = check_range_concepts_config<value_type>{
-          .range_type = range_type::random_access_range,
+          .type = range_type::random_access_range,
           .is_viewable_range = true,
           .is_common_range = true,
           .is_sized_range = true,
@@ -461,7 +461,7 @@ TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-f
     auto rng = std::ranges::ref_view(init) | ring();
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::input_range,
+        .type = range_type::input_range,
         .is_viewable_range = true,
         .is_output_range = true,
     };
@@ -494,10 +494,10 @@ TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-f
     auto rng = init | std::views::drop(1) | ring(3);
 
     constexpr auto checks = check_range_concepts_config<value_type>{
-        .range_type = range_type::random_access_range,
+        .type = range_type::random_access_range,
         .is_viewable_range = true,
-        .is_common_range = true,
         .is_output_range = true,
+        .is_common_range = true,
         .is_sized_range = true,
     };
     static_check_range_concepts<checks>(rng);
@@ -530,7 +530,7 @@ TEST_CASE("ring_view output range", "[ring_view]") {  // cppcheck-suppress[namin
   std::ranges::for_each(rng, [](auto& val) { ++val; });
 
   constexpr auto checks = check_range_concepts_config<value_type>{
-      .range_type = range_type::random_access_range,
+      .type = range_type::random_access_range,
       .is_viewable_range = true,
       .is_output_range = true,
       .is_common_range = true,
