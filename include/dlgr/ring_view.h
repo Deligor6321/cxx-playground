@@ -395,13 +395,7 @@ class ring_view<RangeType, BoundType>::iterator {
 
   [[nodiscard]] constexpr iterator(base_iterator_type begin, base_iterator_type end,
                                    bound_type pos = {})
-      : curr_{begin}, begin_{std::move(begin)}, end_{std::move(end)}, pos_{pos} {
-    // Constraints
-    if constexpr (!is_unbounded_) {
-      static_assert(std::numeric_limits<difference_type>::max()
-                    <= std::numeric_limits<bound_type>::max());
-    }
-  }
+      : curr_{begin}, begin_{std::move(begin)}, end_{std::move(end)}, pos_{pos} {}
 
   // -- Helper functions
 
