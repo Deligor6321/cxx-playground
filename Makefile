@@ -174,6 +174,7 @@ $(foreach _build_type, $(BUILD_TYPES), \
 test-fast : test-fast-$(DEFAULT_BUILD_TYPE)
 
 cppcheck : $(BUILD_DIR_$(DEFAULT_BUILD_TYPE))/$(COMPILE_COMMANDS)
+	rm -rf $(BUILD_DIR)/cppcheck
 	mkdir -p $(BUILD_DIR)/cppcheck
 	cppcheck -v --error-exitcode=1 -j $(N_JOBS) --check-level=exhaustive \
 		--cppcheck-build-dir=$(BUILD_DIR)/cppcheck \

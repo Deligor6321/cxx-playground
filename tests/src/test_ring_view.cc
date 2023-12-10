@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <deque>
 #include <forward_list>
 #include <iterator>
@@ -84,6 +85,34 @@ constexpr auto static_check_iterator_category(auto&& range) -> void {
   STATIC_CHECK(std::is_same_v<IteartorCategory, ExpectedIteratorCategory>);
 }
 
+template <class RangeType>
+concept empty_testable_range =
+    std::ranges::range<RangeType> && requires(const RangeType& range) { range.empty(); };
+
+template <class RangeType>
+constexpr auto check_empty(RangeType&& range, bool expected_empty) -> void
+  requires empty_testable_range<RangeType>
+{
+  CHECK(range.empty() == expected_empty);
+}
+
+template <class RangeType>
+constexpr auto check_size(RangeType&& range, std::size_t expected_size) -> void
+  requires std::ranges::sized_range<RangeType>
+{
+  CHECK(range.size() == expected_size);
+
+  if constexpr (empty_testable_range<RangeType>) {
+    const auto expected_empty = (expected_size == 0);
+    check_empty(std::forward<RangeType>(range), expected_empty);
+  }
+
+  if constexpr (std::ranges::random_access_range<RangeType>) {
+    const auto size = static_cast<std::size_t>(range.end() - range.begin());
+    CHECK(size == expected_size);
+  }  // cppcheck-suppress[missingReturn]: False positive
+}
+
 }  // namespace
 
 // NOLINTBEGIN
@@ -101,7 +130,7 @@ TEST_CASE("ring_view for vector", "[ring_view]") {  // cppcheck-suppress[naming-
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(!rng.empty());
+    check_empty(rng, false);
 
     SECTION("-> take") {
       auto rng2 = rng | std::views::take(11);
@@ -125,9 +154,7 @@ TEST_CASE("ring_view for vector", "[ring_view]") {  // cppcheck-suppress[naming-
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(!rng.empty());
-    CHECK(rng.size() == 10);
-    CHECK((rng.end() - rng.begin()) == 10);
+    check_size(rng, 10);
     CHECK(to_vector(rng) == std::vector<value_type>{0, 11, 23, 24, 27, 0, 11, 23, 24, 27});
 
     SECTION(" -> reverse") {
@@ -136,9 +163,7 @@ TEST_CASE("ring_view for vector", "[ring_view]") {  // cppcheck-suppress[naming-
       static_check_range_concepts<checks>(rng2);
       static_check_iterator_category<std::random_access_iterator_tag>(rng2);
 
-      CHECK(!rng2.empty());
-      CHECK(rng2.size() == 10);
-      CHECK((rng2.end() - rng2.begin()) == 10);
+      check_size(rng2, 10);
       CHECK(to_vector(rng2) == std::vector<value_type>{27, 24, 23, 11, 0, 27, 24, 23, 11, 0});
     }
   }
@@ -159,7 +184,7 @@ TEST_CASE("ring_view for list", "[ring_view]") {  // cppcheck-suppress[naming-fu
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(!rng.empty());
+    check_empty(rng, false);
 
     SECTION("-> take") {
       auto rng2 = rng | std::views::take(9);
@@ -184,8 +209,7 @@ TEST_CASE("ring_view for list", "[ring_view]") {  // cppcheck-suppress[naming-fu
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::bidirectional_iterator_tag>(rng);
 
-    CHECK(!rng.empty());
-    CHECK(rng.size() == 10);
+    check_size(rng, 10);
     CHECK(to_vector(rng) == std::vector<value_type>{0, 11, 23, 24, 27, 0, 11, 23, 24, 27});
   }
 }
@@ -205,7 +229,7 @@ TEST_CASE("ring_view for forward_list", "[ring_view]") {  // cppcheck-suppress[n
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(!rng.empty());
+    check_empty(rng, false);
 
     SECTION("-> take -> drop") {
       auto rng2 = rng | std::views::take(17) | std::views::drop(4);
@@ -230,7 +254,7 @@ TEST_CASE("ring_view for forward_list", "[ring_view]") {  // cppcheck-suppress[n
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::forward_iterator_tag>(rng);
 
-    CHECK(rng.empty());
+    check_empty(rng, true);
     CHECK(to_vector(rng) == std::vector<value_type>{});
   }
 }
@@ -250,7 +274,7 @@ TEST_CASE("ring_view for string", "[ring_view]") {  // cppcheck-suppress[naming-
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(!rng.empty());
+    check_empty(rng, false);
 
     SECTION("-> take") {
       auto rng2 = rng | std::views::take(7);
@@ -275,9 +299,7 @@ TEST_CASE("ring_view for string", "[ring_view]") {  // cppcheck-suppress[naming-
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(!rng.empty());
-    CHECK(rng.size() == 3);
-    CHECK((rng.end() - rng.begin()) == 3);
+    check_size(rng, 3);
     CHECK(to_vector(rng) == std::vector<value_type>{'a', 'b', 'c'});
   }
 }
@@ -297,7 +319,7 @@ TEST_CASE("ring_view for empty string_view",
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(rng.empty());
+    check_empty(rng, true);
     CHECK(to_vector(rng) == std::vector<value_type>{});
   }
 
@@ -313,9 +335,7 @@ TEST_CASE("ring_view for empty string_view",
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(rng.empty());
-    CHECK(rng.size() == 0);
-    CHECK((rng.end() - rng.begin()) == 0);
+    check_size(rng, 0);
     CHECK(to_vector(rng) == std::vector<value_type>{});
 
     SECTION("-> drop(1'000)") {
@@ -324,9 +344,7 @@ TEST_CASE("ring_view for empty string_view",
       static_check_range_concepts<checks>(rng2);
       static_check_iterator_category<std::random_access_iterator_tag>(rng2);
 
-      CHECK(rng2.empty());
-      CHECK(rng2.size() == 0);
-      CHECK((rng2.end() - rng2.begin()) == 0);
+      check_size(rng2, 0);
       CHECK(to_vector(rng2) == std::vector<value_type>{});
     }
   }
@@ -364,9 +382,7 @@ TEST_CASE("ring_view for empty_view", "[ring_view]") {  // cppcheck-suppress[nam
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(rng.empty());
-    CHECK(rng.size() == 0);
-    CHECK((rng.end() - rng.begin()) == 0);
+    check_size(rng, 0);
     CHECK(to_vector(rng) == std::vector<value_type>{});
 
     SECTION("-> take") {
@@ -375,9 +391,7 @@ TEST_CASE("ring_view for empty_view", "[ring_view]") {  // cppcheck-suppress[nam
       static_check_range_concepts<checks>(rng2);
       static_check_iterator_category<std::random_access_iterator_tag>(rng2);
 
-      CHECK(rng2.empty());
-      CHECK(rng2.size() == 0);
-      CHECK((rng2.end() - rng2.begin()) == 0);
+      check_size(rng2, 0);
       CHECK(to_vector(rng2) == std::vector<value_type>{});
     }
   }
@@ -398,7 +412,7 @@ TEST_CASE("ring_view for single value", "[ring_view]") {  // cppcheck-suppress[n
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(!rng.empty());
+    check_empty(rng, false);
 
     SECTION("-> transform -> take") {
       auto rng2 = rng | std::views::transform([n = 0](auto val) mutable { return ++n + val; })
@@ -428,9 +442,7 @@ TEST_CASE("ring_view for single value", "[ring_view]") {  // cppcheck-suppress[n
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(!rng.empty());
-    CHECK(rng.size() == 7);
-    CHECK((rng.end() - rng.begin()) == 7);
+    check_size(rng, 7);
     CHECK(to_vector(rng) == std::vector<value_type>{12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0});
 
     SECTION("-> transform") {
@@ -445,9 +457,7 @@ TEST_CASE("ring_view for single value", "[ring_view]") {  // cppcheck-suppress[n
       static_check_range_concepts<checks2>(rng2);
       // static_check_iterator_category<std::random_access_iterator_tag>(rng2);
 
-      CHECK(!rng2.empty());
-      CHECK(rng2.size() == 7);
-      CHECK((rng2.end() - rng2.begin()) == 7);
+      check_size(rng2, 7);
       CHECK(to_vector(rng2) == std::vector<value_type>{13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0});
     }
   }
@@ -478,7 +488,7 @@ TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-f
     CHECK(*it == 7);
     CHECK(*(it - 15) == 1);
 
-    CHECK(!rng.empty());
+    check_empty(rng, false);
 
     SECTION("-> take") {
       auto rng2 = rng | std::views::take(5);
@@ -503,9 +513,7 @@ TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-f
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
-    CHECK(!rng.empty());
-    CHECK(rng.size() == 9);
-    CHECK((rng.end() - rng.begin()) == 9);
+    check_size(rng, 9);
     CHECK(to_vector(rng) == std::vector<value_type>{3, 5, 7, 3, 5, 7, 3, 5, 7});
 
     SECTION("-> take -> drop") {
@@ -514,9 +522,7 @@ TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-f
       static_check_range_concepts<checks>(rng2);
       static_check_iterator_category<std::random_access_iterator_tag>(rng2);
 
-      CHECK(!rng2.empty());
-      CHECK(rng2.size() == 7);
-      CHECK((rng2.end() - rng2.begin()) == 7);
+      check_size(rng2, 7);
       CHECK(to_vector(rng2) == std::vector<value_type>{5, 7, 3, 5, 7, 3, 5});
     }
   }
