@@ -228,9 +228,18 @@ class ring_view<RangeType, BoundType>::iterator {
 
   // -- Data access
 
-  [[nodiscard]] constexpr auto operator*() const -> reference {
-    expects_not_empty();
-    return *curr_;
+  [[nodiscard]] constexpr auto operator*() const -> reference { return access(); }
+
+  [[nodiscard]] constexpr auto operator->() const -> pointer {
+    // cppcheck-suppress[returnDanglingLifetime]: False positive
+    return &access();
+  }
+
+  [[nodiscard]] constexpr auto operator[](difference_type diff) const -> reference
+    requires(std::ranges::random_access_range<parent_base_type>
+             && std::signed_integral<difference_type>)
+  {
+    return (*this + diff).access();
   }
 
   // -- Operations
@@ -268,18 +277,11 @@ class ring_view<RangeType, BoundType>::iterator {
     return diff > 0 ? sub(diff) : diff < 0 ? add(-diff) : (*this);
   }
 
-  [[nodiscard]] constexpr auto
-  operator[](difference_type diff) const -> reference
-    requires(std::ranges::random_access_range<parent_base_type>
-             && std::signed_integral<difference_type>)
-  {
-    return *(*this + diff);
-  }
-
   // -- Conversions
 
   // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-*)
-  [[nodiscard]] constexpr operator iterator<true>() const
+  [[nodiscard]] constexpr
+  operator iterator<true>() const
     requires(!Const)
   {
     return {
@@ -399,6 +401,11 @@ class ring_view<RangeType, BoundType>::iterator {
 
   // -- Helper functions
 
+  [[nodiscard]] constexpr auto access() const -> reference {
+    expects_not_empty();
+    return *curr_;
+  }
+
   constexpr auto inc() -> iterator& {
     expects_not_empty();
 
@@ -441,12 +448,13 @@ class ring_view<RangeType, BoundType>::iterator {
     const auto to_end = std::ranges::distance(curr_, end_);
     GSL_ASSUME(to_end > 0);
 
-    if (diff >= to_end) {
+    if (diff < to_end) {
+      curr_ += diff;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    } else {
       const auto len = std::ranges::distance(begin_, end_);
       GSL_ASSUME(len > 0);
 
       const auto div_mod = std::div(diff - to_end, len);
-      GSL_ASSUME(div_mod.rem >= 0 && div_mod.rem < len);
 
       if constexpr (!is_unbounded_) {
         GSL_ASSUME(div_mod.quot >= 0 && div_mod.quot < std::numeric_limits<difference_type>::max());
@@ -457,10 +465,9 @@ class ring_view<RangeType, BoundType>::iterator {
         pos_ += pos_diff;
       }
 
-      diff = div_mod.rem;
+      GSL_ASSUME(div_mod.rem >= 0 && div_mod.rem < len);
+      curr_ = begin_ + div_mod.rem;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }
-
-    curr_ = begin_ + diff;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return *this;
   }
 
@@ -476,12 +483,13 @@ class ring_view<RangeType, BoundType>::iterator {
     const auto to_rend = std::ranges::distance(begin_, curr_) + 1;
     GSL_ASSUME(to_rend > 0);
 
-    if (diff >= to_rend) {
+    if (diff < to_rend) {
+      curr_ -= diff;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    } else {
       const auto len = std::ranges::distance(begin_, end_);
       GSL_ASSUME(len > 0);
 
       const auto div_mod = std::div(diff - to_rend, len);
-      GSL_ASSUME(div_mod.rem >= 0 && div_mod.rem < len);
 
       if constexpr (!is_unbounded_) {
         GSL_ASSUME(div_mod.quot >= 0 && div_mod.quot < std::numeric_limits<difference_type>::max());
@@ -491,10 +499,10 @@ class ring_view<RangeType, BoundType>::iterator {
         pos_ -= pos_diff;
       }
 
-      diff = div_mod.rem;
+      GSL_ASSUME(div_mod.rem >= 0 && div_mod.rem < len);
+      curr_ = rbegin - div_mod.rem;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     }
 
-    curr_ = rbegin - diff;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return *this;
   }
 
