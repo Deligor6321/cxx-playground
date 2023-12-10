@@ -253,10 +253,10 @@ class ring_view<RangeType, BoundType>::iterator {
 
   // -- Assignment
 
-  [[nodiscard]] constexpr auto operator=(const iterator&) noexcept(
+  constexpr auto operator=(const iterator&) noexcept(
       std::is_nothrow_copy_assignable_v<base_iterator_type>) -> iterator& = default;
 
-  [[nodiscard]] constexpr auto operator=(iterator&&) noexcept(
+  constexpr auto operator=(iterator&&) noexcept(
       // NOLINTNEXTLINE(*-noexcept-move*): Conditional noexcept
       std::is_nothrow_move_assignable_v<base_iterator_type>) -> iterator& = default;
 
