@@ -1,6 +1,9 @@
 // Copyright 2023 Deligor <deligor6321@gmail.com>
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
+#include <catch2/generators/catch_generators_adapters.hpp>
+#include <catch2/generators/catch_generators_random.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -8,6 +11,7 @@
 #include <forward_list>
 #include <iterator>
 #include <list>
+#include <ostream>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -110,7 +114,101 @@ constexpr auto check_size(RangeType&& range, std::size_t expected_size) -> void
   if constexpr (std::ranges::random_access_range<RangeType>) {
     const auto size = static_cast<std::size_t>(range.end() - range.begin());
     CHECK(size == expected_size);
-  }  // cppcheck-suppress[missingReturn]: False positive
+  }
+}
+
+template <class IterType>
+concept iter_with_shift_op = requires(IterType iter, std::iter_difference_t<IterType> diff) {
+  { iter + diff } -> std::same_as<IterType>;
+};
+template <class IterType>
+concept iter_with_diff_op = requires(IterType lhs, IterType rhs) {
+  { lhs - rhs } -> std::same_as<std::iter_difference_t<IterType>>;
+};
+
+template <class IterType>
+constexpr auto check_iter_value(IterType iter, std::iter_value_t<IterType> expected_value) -> void {
+  CHECK((*iter) == expected_value);
+  CHECK(*(iter.operator->()) == expected_value);
+  CHECK(iter[0] == expected_value);
+}
+
+template <class IterType>
+constexpr auto check_iter_value_with_shift(IterType iter, std::iter_difference_t<IterType> shift,
+                                           std::iter_value_t<IterType> expected_value) -> void
+  requires iter_with_shift_op<IterType>
+{
+  constexpr auto has_diff_op = iter_with_diff_op<IterType>;
+
+  const auto origin_value = *iter;
+  CHECK(iter[shift] == expected_value);
+
+  auto iter_shifted = iter + shift;
+  check_iter_value(iter_shifted, expected_value);
+  if constexpr (has_diff_op) {
+    CHECK(iter_shifted - iter == shift);
+    CHECK(iter - iter_shifted == -shift);
+  }
+
+  iter += shift;
+  check_iter_value(iter, expected_value);
+  CHECK(iter[-shift] == origin_value);
+  if constexpr (has_diff_op) {
+    CHECK(iter_shifted - iter == shift);
+    CHECK(iter - iter_shifted == -shift);
+    CHECK(iter == iter_shifted);
+  }
+}
+
+constexpr auto check_random_access_ops(auto&& range, auto&& init_range) -> void {
+  using ::Catch::Generators::random;
+  using ::Catch::Generators::take;
+
+  SECTION("random access ops") {
+    using difference_type = std::ranges::range_difference_t<decltype(init_range)>;
+    using size_type = std::ranges::range_size_t<decltype(init_range)>;
+
+    auto rng_begin = std::ranges::begin(range);
+
+    check_iter_value(rng_begin, init_range[0]);
+
+    auto init_size = std::ranges::size(init_range);
+
+    constexpr size_type lap_max = 100;
+
+    SECTION("shift inside initial range") {
+      const auto index = GENERATE_REF(take(1, random<size_type>(0, init_size - 1)));
+      const auto shift = static_cast<difference_type>(index);
+      check_iter_value_with_shift(rng_begin, shift, init_range[index]);
+    }
+
+    SECTION("shift far forward") {
+      const auto lap = GENERATE_REF(take(1, random<size_type>(1, lap_max)));
+      const auto index = GENERATE_REF(take(1, random<size_type>(0, init_size - 1)));
+      const auto shift = static_cast<difference_type>(lap * init_size + index);
+      check_iter_value_with_shift(rng_begin, shift, init_range[index]);
+    }
+
+    SECTION("shift backward") {
+      const auto scalar = GENERATE_REF(take(1, random<size_type>(0, lap_max)));
+      const auto index = GENERATE_REF(take(1, random<size_type>(1, init_size)));
+      const auto shift = static_cast<difference_type>(scalar * init_size + index);
+      check_iter_value_with_shift(rng_begin, -shift, init_range[init_size - index]);
+    }
+  }
+}
+
+struct test_struct {
+  int val = {};
+};
+
+constexpr auto operator==(const test_struct& lhs, const test_struct& rhs) -> bool {
+  return lhs.val == rhs.val;
+}
+
+auto operator<<(std::ostream& stream, const test_struct& value) -> std::ostream& {
+  stream << "{.val = " << value.val << '}';
+  return stream;
 }
 
 }  // namespace
@@ -365,7 +463,7 @@ TEST_CASE("ring_view for empty_view", "[ring_view]") {  // cppcheck-suppress[nam
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    CHECK(rng.empty());
+    check_empty(rng, true);
     CHECK(to_vector(rng) == std::vector<value_type>{});
   }
 
@@ -464,7 +562,7 @@ TEST_CASE("ring_view for single value", "[ring_view]") {  // cppcheck-suppress[n
 }
 
 TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-functionName]
-  auto init = std::deque{1, 3, 5, 7};
+  auto init = std::deque<test_struct>{{1}, {3}, {5}, {7}};
   using value_type = decltype(init)::value_type;
 
   SECTION("ref -> ring(unbounded)") {
@@ -478,17 +576,8 @@ TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-f
     static_check_range_concepts<checks>(rng);
     static_check_iterator_category<std::input_iterator_tag>(rng);
 
-    auto it = std::ranges::begin(rng);
-
-    it += 6;
-    CHECK(*it == 5);
-    CHECK(*(it + 17) == 7);
-
-    it -= 3;
-    CHECK(*it == 7);
-    CHECK(*(it - 15) == 1);
-
     check_empty(rng, false);
+    check_random_access_ops(rng, init);
 
     SECTION("-> take") {
       auto rng2 = rng | std::views::take(5);
@@ -496,7 +585,7 @@ TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-f
       static_check_range_concepts<checks>(rng2);
       static_check_iterator_category<std::input_iterator_tag>(rng2);
 
-      CHECK(to_vector(rng2) == std::vector<value_type>{1, 3, 5, 7, 1});
+      CHECK(to_vector(rng2) == std::vector<value_type>{{1}, {3}, {5}, {7}, {1}});
     }
   }
 
@@ -514,7 +603,7 @@ TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-f
     static_check_iterator_category<std::random_access_iterator_tag>(rng);
 
     check_size(rng, 9);
-    CHECK(to_vector(rng) == std::vector<value_type>{3, 5, 7, 3, 5, 7, 3, 5, 7});
+    CHECK(to_vector(rng) == std::vector<value_type>{{3}, {5}, {7}, {3}, {5}, {7}, {3}, {5}, {7}});
 
     SECTION("-> take -> drop") {
       auto rng2 = rng | std::views::take(8) | std::views::drop(1);
@@ -523,7 +612,7 @@ TEST_CASE("ring_view for deque", "[ring_view]") {  // cppcheck-suppress[naming-f
       static_check_iterator_category<std::random_access_iterator_tag>(rng2);
 
       check_size(rng2, 7);
-      CHECK(to_vector(rng2) == std::vector<value_type>{5, 7, 3, 5, 7, 3, 5});
+      CHECK(to_vector(rng2) == std::vector<value_type>{{5}, {7}, {3}, {5}, {7}, {3}, {5}});
     }
   }
 }
@@ -551,6 +640,6 @@ TEST_CASE("ring_view output range", "[ring_view]") {  // cppcheck-suppress[namin
 
 // TODO(tests): deduction guides, more bounded tests, other std views and algorithms,
 // kv-containers, iterator/sentinel concepts, big bounds, out of range, random access ops,
-// constexpr, noexcept
+// constexpr, noexcept, const iter
 
 // NOLINTEND
